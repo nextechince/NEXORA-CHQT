@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Join Group</title>
+    <script src="script.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background: #0B141A; color: #E9EDEF; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { width: 100%; max-width: 430px; padding: 20px; text-align: center; }
+        .card { background: #1F2C33; border-radius: 16px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+        .avatar { font-size: 64px; margin: 8px 0; }
+        .name { font-size: 24px; font-weight: 700; margin: 8px 0; }
+        .sub { color: #7E8A95; font-size: 14px; }
+        .btn { background: #14C37A; color: #111B21; border: none; padding: 14px 30px; border-radius: 30px; font-weight: 600; font-size: 16px; cursor: pointer; width: 100%; margin: 8px 0; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn.secondary { background: #1F2C33; color: #E9EDEF; border: 1px solid #2A3942; }
+        .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: #14C37A; color: #111B21; padding: 8px 20px; border-radius: 8px; font-weight: 600; z-index: 999; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .toast.error { background: #E74C3C; color: #fff; }
+    </style>
+</head>
+<body>
+<div class="container" id="content">
+    <div class="card">
+        <div class="avatar" id="groupAvatar">👥</div>
+        <div class="name" id="groupName">Loading...</div>
+        <div class="sub" id="groupInfo">Fetching group details...</div>
+        <button class="btn" id="joinBtn">Join Group</button>
+        <button class="btn secondary" id="backBtn">Go Back</button>
+    </div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+    const toast = document.getElementById('toast');
+    function showToast(text, isError = false) {
+        toast.textContent = text;
+        toast.className = 'toast' + (isError ? ' error' : '');
+        toast.style.display = 'block';
+        clearTimeout(toast._timeout);
+        toast._timeout = setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const groupId = urlParams.get('id');
+        if (!groupId) {
+            document.getElementById('groupName').textContent = 'Invalid Link';
+            document.getElementById('groupInfo').textContent = 'No group ID provided.';
+            document.getElementById('joinBtn').disabled = true;
+            return;
+        }
+
+        // Fetch group info
+        let group = null;
+        try {
+            const res = await fetch(`/api/group/${groupId}`);
+            const data = await res.json();
+            if (data.success) {
+                group = data.group;
+                document.getElementById('groupName').textContent = group.name || 'Group';
+                document.getElementById('groupInfo').textContent = `${group.members?.length || 0} members`;
+                document.getElementById('groupAvatar').textContent = group.avatar ? '' : '👥';
+                if (group.avatar) {
+                    document.getElementById('groupAvatar').innerHTML = `<img src="${group.avatar}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;" />`;
+                }
+            } else {
+                document.getElementById('groupName').textContent = 'Group Not Found';
+                document.getElementById('groupInfo').textContent = 'This group may have been deleted.';
+                document.getElementById('joinBtn').disabled = true;
+            }
+        } catch(e) {
+            showToast('Network error', true);
+            document.getElementById('joinBtn').disabled = true;
+        }
+
+        document.getElementById('joinBtn').addEventListener('click', async function() {
+            if (!group) return;
+            const token = getToken();
+            if (!token) {
+                showToast('Please login first', true);
+                setTimeout(() => goTo('login.html'), 1500);
+                return;
+            }
+            this.disabled = true;
+            this.textContent = 'Joining...';
+            try {
+                const res = await fetch('/api/join-group', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, groupId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.alreadyMember ? 'You are already a member' : 'Joined successfully!');
+                    setTimeout(() => goTo(`group-chat.html?id=${groupId}`), 1500);
+                } else {
+                    showToast(data.error || 'Failed to join', true);
+                    this.disabled = false;
+                    this.textContent = 'Join Group';
+                }
+            } catch(e) {
+                showToast('Network error', true);
+                this.disabled = false;
+                this.textContent = 'Join Group';
+            }
+        });
+
+        document.getElementById('backBtn').addEventListener('click', () => goTo('communities.html'));
+    });
+</script>
+</body>
+</html>

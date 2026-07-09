@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Privacy</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0" rel="stylesheet">
+    <script src="script.js"></script>
+    <style>
+        :root {
+            --bg-color: #12181b;
+            --surface-color: #1a2226;
+            --text-primary: #ffffff;
+            --text-secondary: #90a4ae;
+            --divider-color: #263238;
+            --accent-color: #00cc76;
+            --danger-color: #ef5350;
+        }
+        .light-mode {
+            --bg-color: #f5f7f8;
+            --surface-color: #ffffff;
+            --text-primary: #1c252c;
+            --text-secondary: #607d8b;
+            --divider-color: #cfd8dc;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-primary); display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; transition: background-color 0.3s; }
+        .phone-container { width: 100%; max-width: 450px; background-color: var(--bg-color); min-height: 100vh; display: flex; flex-direction: column; position: relative; padding-bottom: 20px; }
+        header { padding: 16px 20px; display: flex; align-items: center; gap: 12px; }
+        header .back-btn { color: var(--text-secondary); cursor: pointer; font-size: 28px; }
+        header h1 { font-size: 24px; font-weight: 700; flex: 1; }
+        .section-header { padding: 12px 20px 4px 20px; font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+        .settings-item { display: flex; align-items: center; padding: 12px 20px; background: none; border: none; width: 100%; text-align: left; color: inherit; border-bottom: 1px solid var(--divider-color); cursor: pointer; }
+        .settings-item:active { background-color: rgba(255,255,255,0.05); }
+        .light-mode .settings-item:active { background-color: rgba(0,0,0,0.05); }
+        .settings-item .left { display: flex; flex-direction: column; flex: 1; }
+        .settings-item .left .title { font-size: 16px; font-weight: 500; }
+        .settings-item .left .sub { font-size: 13px; color: var(--text-secondary); }
+        .settings-item .right { display: flex; align-items: center; gap: 8px; }
+        .settings-item .right select, .settings-item .right input { background: var(--surface-color); color: var(--text-primary); border: 1px solid var(--divider-color); border-radius: 8px; padding: 6px 12px; font-size: 14px; outline: none; }
+        .settings-item .right select option { background: var(--bg-color); }
+        .toggle { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .toggle input { opacity: 0; width: 0; height: 0; }
+        .toggle .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #37474f; transition: .3s; border-radius: 24px; }
+        .toggle .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+        .toggle input:checked + .slider { background-color: var(--accent-color); }
+        .toggle input:checked + .slider:before { transform: translateX(20px); }
+        .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: var(--accent-color); color: #111619; padding: 10px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; z-index: 999; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .toast.error { background: var(--danger-color); color: #fff; }
+    </style>
+</head>
+<body>
+<div class="phone-container">
+    <header>
+        <span class="back-btn material-symbols-outlined" id="backBtn">arrow_back</span>
+        <h1>Privacy</h1>
+    </header>
+
+    <div class="section-header">WHO CAN SEE MY</div>
+    <div class="settings-item">
+        <div class="left"><div class="title">Last Seen</div><div class="sub">Controls who can see your last seen</div></div>
+        <div class="right">
+            <select id="lastSeen"><option value="everyone">Everyone</option><option value="contacts">Contacts</option><option value="none">Nobody</option></select>
+        </div>
+    </div>
+    <div class="settings-item">
+        <div class="left"><div class="title">Profile Photo</div><div class="sub">Who can see your profile photo</div></div>
+        <div class="right">
+            <select id="profilePhoto"><option value="everyone">Everyone</option><option value="contacts">Contacts</option><option value="none">Nobody</option></select>
+        </div>
+    </div>
+    <div class="settings-item">
+        <div class="left"><div class="title">About / Bio</div><div class="sub">Who can see your about</div></div>
+        <div class="right">
+            <select id="about"><option value="everyone">Everyone</option><option value="contacts">Contacts</option><option value="none">Nobody</option></select>
+        </div>
+    </div>
+    <div class="settings-item">
+        <div class="left"><div class="title">Status</div><div class="sub">Who can see your status updates</div></div>
+        <div class="right">
+            <select id="statusVisibility"><option value="everyone">Everyone</option><option value="contacts">Contacts</option><option value="none">Nobody</option></select>
+        </div>
+    </div>
+
+    <div class="section-header">MESSAGING</div>
+    <div class="settings-item">
+        <div class="left"><div class="title">Read Receipts</div><div class="sub">Show when you've read messages</div></div>
+        <div class="right"><label class="toggle"><input type="checkbox" id="readReceipts"><span class="slider"></span></label></div>
+    </div>
+    <div class="settings-item">
+        <div class="left"><div class="title">Online Status</div><div class="sub">Show when you're active</div></div>
+        <div class="right"><label class="toggle"><input type="checkbox" id="onlineStatus"><span class="slider"></span></label></div>
+    </div>
+
+    <div class="section-header">GROUPS & CALLS</div>
+    <div class="settings-item">
+        <div class="left"><div class="title">Group Invite Permissions</div><div class="sub">Who can add you to groups</div></div>
+        <div class="right">
+            <select id="groupInvite"><option value="everyone">Everyone</option><option value="contacts">Contacts</option><option value="none">Nobody</option></select>
+        </div>
+    </div>
+    <div class="settings-item">
+        <div class="left"><div class="title">Who Can Call Me</div><div class="sub">Control who can call you</div></div>
+        <div class="right">
+            <select id="whoCanCall"><option value="everyone">Everyone</option><option value="contacts">Contacts</option><option value="none">Nobody</option></select>
+        </div>
+    </div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+    const toast = document.getElementById('toast');
+    function showToast(text, isError = false) {
+        toast.textContent = text;
+        toast.className = 'toast' + (isError ? ' error' : '');
+        toast.style.display = 'block';
+        clearTimeout(toast._timeout);
+        toast._timeout = setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        const ok = await checkAuth(true);
+        if (!ok) return;
+
+        document.getElementById('backBtn').addEventListener('click', () => goTo('settings.html'));
+
+        const token = getToken();
+        let user = null;
+        try {
+            const res = await fetch('/api/me', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) });
+            const data = await res.json();
+            if (data.success) user = data.user;
+        } catch(e) { showToast('Failed to load settings', true); }
+
+        if (user && user.settings && user.settings.privacy) {
+            const p = user.settings.privacy;
+            document.getElementById('lastSeen').value = p.lastSeen || 'everyone';
+            document.getElementById('profilePhoto').value = p.profilePhoto || 'everyone';
+            document.getElementById('about').value = p.about || 'everyone';
+            document.getElementById('statusVisibility').value = p.statusVisibility || 'everyone';
+            document.getElementById('readReceipts').checked = p.readReceipts !== undefined ? p.readReceipts : true;
+            document.getElementById('onlineStatus').checked = p.onlineStatus !== undefined ? p.onlineStatus : true;
+            document.getElementById('groupInvite').value = p.groupInvite || 'everyone';
+            document.getElementById('whoCanCall').value = p.whoCanCall || 'everyone';
+        }
+
+        // Apply dark mode
+        if (user && user.settings && user.settings.darkMode === false) {
+            document.body.classList.add('light-mode');
+        }
+
+        async function savePrivacy() {
+            const updates = {
+                settings: {
+                    privacy: {
+                        lastSeen: document.getElementById('lastSeen').value,
+                        profilePhoto: document.getElementById('profilePhoto').value,
+                        about: document.getElementById('about').value,
+                        statusVisibility: document.getElementById('statusVisibility').value,
+                        readReceipts: document.getElementById('readReceipts').checked,
+                        onlineStatus: document.getElementById('onlineStatus').checked,
+                        groupInvite: document.getElementById('groupInvite').value,
+                        whoCanCall: document.getElementById('whoCanCall').value
+                    }
+                }
+            };
+            try {
+                const res = await fetch('/api/update-profile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, updates }) });
+                const data = await res.json();
+                if (data.success) showToast('Privacy updated');
+                else showToast('Failed to save', true);
+            } catch(e) { showToast('Network error', true); }
+        }
+
+        // Attach change events
+        document.querySelectorAll('#lastSeen, #profilePhoto, #about, #statusVisibility, #groupInvite, #whoCanCall').forEach(el => {
+            el.addEventListener('change', savePrivacy);
+        });
+        document.querySelectorAll('#readReceipts, #onlineStatus').forEach(el => {
+            el.addEventListener('change', savePrivacy);
+        });
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0B141A;
+    color: #E9EDEF;
+}
+
+/* ---- Glowing container ---- */
+.glow-container {
+    position: relative;
+    overflow: hidden;
+}
+.glow-container::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(ellipse at 30% 20%, rgba(168, 85, 247, 0.12) 0%, transparent 60%),
+                radial-gradient(ellipse at 70% 80%, rgba(20, 195, 122, 0.08) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+    animation: glowPulse 8s ease-in-out infinite alternate;
+}
+.glow-container > * {
+    position: relative;
+    z-index: 1;
+}
+
+@keyframes glowPulse {
+    0% { opacity: 0.6; transform: scale(1); }
+    100% { opacity: 1; transform: scale(1.05); }
+}
+
+/* ---- Buttons ---- */
+.btn-primary {
+    background: #a855f7;
+    color: #fff;
+    padding: 14px;
+    border-radius: 30px;
+    border: none;
+    font-weight: 700;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.2s;
+    box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
+}
+.btn-primary:hover {
+    background: #8b45d6;
+    transform: scale(1.02);
+}
+
+.btn-secondary {
+    background: transparent;
+    color: #AEBAC1;
+    border: 1px solid #1F2C33;
+    padding: 14px;
+    border-radius: 30px;
+    cursor: pointer;
+    width: 100%;
+    font-weight: 600;
+}
+
+/* ---- Boxes ---- */
+.glow-box {
+    background: rgba(31, 26, 46, 0.85);
+    backdrop-filter: blur(12px);
+    border-radius: 30px;
+    padding: 30px 20px;
+    box-shadow: 0 0 60px rgba(168, 85, 247, 0.2);
+    border: 1px solid rgba(168, 85, 247, 0.1);
+    width: 90%;
+    max-width: 340px;
+}
+
+/* ---- Dashboard specific ---- */
+.app-container {
+    width: 100%;
+    max-width: 430px;
+    height: 100vh;
+    max-height: 850px;
+    background: #111B21;
+    border-radius: 28px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    box-shadow: 0 0 60px rgba(20, 195, 122, 0.15), 0 0 120px rgba(20, 195, 122, 0.05);
+}

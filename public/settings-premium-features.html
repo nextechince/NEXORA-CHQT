@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Premium Features</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0" rel="stylesheet">
+    <script src="script.js"></script>
+    <style>
+        /* same styles as before */
+        :root { --bg-color: #0B141A; --surface-color: #111B21; --surface2: #1F2C33; --text-primary: #E9EDEF; --text-secondary: #AEBAC1; --accent-color: #14C37A; --divider-color: #2A3942; --premium-gold: #FFD700; }
+        .light-mode { --bg-color: #F5F7F8; --surface-color: #FFFFFF; --surface2: #E4E6EB; --text-primary: #1C252C; --text-secondary: #607D8B; --divider-color: #CFD8DC; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-primary); display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; transition: background-color 0.3s; }
+        .phone-container { width: 100%; max-width: 450px; background-color: var(--bg-color); min-height: 100vh; display: flex; flex-direction: column; padding-bottom: 20px; }
+        header { padding: 16px 20px; display: flex; align-items: center; gap: 12px; background: var(--surface-color); border-bottom: 1px solid var(--divider-color); }
+        header .back-btn { color: var(--text-secondary); cursor: pointer; font-size: 28px; }
+        header h1 { font-size: 24px; font-weight: 700; flex: 1; }
+        .premium-badge { background: var(--premium-gold); color: #111B21; padding: 2px 12px; border-radius: 30px; font-weight: 700; font-size: 12px; }
+        .settings-item { display: flex; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--divider-color); }
+        .settings-item .left { flex: 1; }
+        .settings-item .left .title { font-size: 16px; font-weight: 500; }
+        .settings-item .left .desc { font-size: 13px; color: var(--text-secondary); }
+        .toggle { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .toggle input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #37474f; transition: .3s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--accent-color); }
+        input:checked + .slider:before { transform: translateX(20px); }
+        .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: var(--accent-color); color: #111B21; padding: 8px 20px; border-radius: 8px; font-weight: 600; display: none; z-index: 999; }
+        .toast.error { background: #E74C3C; color: #fff; }
+        .feature-icon { width: 36px; height: 36px; border-radius: 50%; background: rgba(20,195,122,0.12); display: flex; align-items: center; justify-content: center; color: var(--accent-color); margin-right: 12px; flex-shrink: 0; }
+    </style>
+</head>
+<body>
+<div class="phone-container">
+    <header>
+        <span class="back-btn material-symbols-outlined" id="backBtn">arrow_back</span>
+        <h1>Premium Features</h1>
+        <span class="premium-badge">⭐</span>
+    </header>
+
+    <div id="featureList"></div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+    const toast = document.getElementById('toast');
+    function showToast(text, isError = false) {
+        toast.textContent = text;
+        toast.className = 'toast' + (isError ? ' error' : '');
+        toast.style.display = 'block';
+        clearTimeout(toast._timeout);
+        toast._timeout = setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        const ok = await checkAuth(true);
+        if (!ok) return;
+
+        const user = await getUser();
+        if (!user) { showToast('Failed to load user', true); return; }
+        if (user.settings && user.settings.darkMode === false) document.body.classList.add('light-mode');
+        if (!user.premium) {
+            showToast('This page is for Premium users only', true);
+            setTimeout(() => goTo('settings.html'), 1500);
+            return;
+        }
+
+        document.getElementById('backBtn').addEventListener('click', () => goTo('settings.html'));
+
+        const features = [
+            { key: 'smartReplies', icon: 'auto_awesome', title: 'AI Smart Replies', desc: 'Context-aware suggested replies' },
+            { key: 'messageScheduler', icon: 'schedule', title: 'Message Scheduler', desc: 'Schedule messages to send later' },
+            { key: 'anonymousMode', icon: 'visibility_off', title: 'Anonymous Mode', desc: 'Hide last seen and typing status' },
+            { key: 'customThemes', icon: 'palette', title: 'Custom Chat Themes', desc: 'Choose from 50+ unique themes' },
+            { key: 'viewOnce', icon: 'visibility', title: 'View Once Media', desc: 'Send photos/videos that disappear' },
+            { key: 'messageRetraction', icon: 'undo', title: 'Message Retraction', desc: 'Unsend any message anytime' },
+            { key: 'voiceToText', icon: 'mic', title: 'Voice-to-Text', desc: 'Transcribe voice notes to text' },
+            { key: 'cloudBackup', icon: 'cloud_upload', title: 'Cloud Backup', desc: 'Auto-backup and restore chats' },
+            { key: 'customSounds', icon: 'notifications_active', title: 'Custom Notification Sounds', desc: 'Set unique tones per contact' },
+            { key: 'customBadge', icon: 'badge', title: 'Custom User Badge', desc: 'Emoji + color badge next to name' },
+            { key: 'analytics', icon: 'analytics', title: 'Advanced Analytics', desc: 'Profile & message read analytics' },
+            { key: 'animatedProfile', icon: 'gif_box', title: 'Animated Profile', desc: 'GIF/MP4 profile picture' },
+            { key: 'unlimitedFolders', icon: 'folder', title: 'Unlimited Chat Folders', desc: 'Organize chats into folders' },
+            { key: 'noSpamFilter', icon: 'mark_email_unread', title: 'No Spam Filter', desc: 'Messages from non-contacts to inbox' },
+            { key: 'messagePinLimit', icon: 'push_pin', title: 'Message Pin Limit', desc: 'Pin up to 100 messages per chat' },
+            { key: 'premiumStickers', icon: 'sticky_note_2', title: 'Exclusive Sticker Packs', desc: 'Premium-only sticker packs' },
+            { key: 'hdCalls', icon: 'hd', title: 'HD Voice & Video Calls', desc: 'Crystal-clear call quality' },
+            { key: 'incognitoMode', icon: 'incognito', title: 'Incognito Mode', desc: 'Appear offline to specific contacts' },
+            { key: 'prioritySupport', icon: 'support_agent', title: 'Priority Support', desc: '24/7 priority assistance' }
+        ];
+
+        const container = document.getElementById('featureList');
+        const pref = user.settings?.premiumFeatures || {};
+        let html = '';
+        features.forEach(f => {
+            const checked = pref[f.key] !== undefined ? pref[f.key] : false;
+            html += `
+                <div class="settings-item">
+                    <div class="feature-icon"><span class="material-symbols-outlined">${f.icon}</span></div>
+                    <div class="left">
+                        <div class="title">${f.title}</div>
+                        <div class="desc">${f.desc}</div>
+                    </div>
+                    <label class="toggle">
+                        <input type="checkbox" ${checked ? 'checked' : ''} data-key="${f.key}">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+
+        container.querySelectorAll('input[type="checkbox"]').forEach(input => {
+            input.addEventListener('change', async function() {
+                const key = this.dataset.key;
+                const value = this.checked;
+                const token = getToken();
+                try {
+                    const res = await fetch('/api/update-profile', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token, updates: { settings: { premiumFeatures: { [key]: value } } } })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        showToast(`${key.replace(/([A-Z])/g, ' $1')} updated`);
+                    } else {
+                        showToast('Failed to save', true);
+                        this.checked = !value;
+                    }
+                } catch(e) {
+                    showToast('Network error', true);
+                    this.checked = !value;
+                }
+            });
+        });
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js"></script>
+    <style>
+        .progress {
+            width: 80%;
+            height: 6px;
+            background: #1F2C33;
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 20px auto;
+        }
+        .progress .fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #a855f7, #c084fc);
+            transition: width 0.8s ease;
+        }
+    </style>
+</head>
+<body>
+<div class="glow-container" style="display:flex; justify-content:center; align-items:center; height:100vh; background:#0B141A;">
+    <div style="text-align:center; color:#E9EDEF;">
+        <div style="font-size:48px; color:#a855f7;">🚀</div>
+        <h2 style="margin:10px 0;">Creating your account</h2>
+        <p style="color:#AEBAC1;">Almost done...</p>
+        <div class="progress"><div class="fill" id="progressFill"></div></div>
+    </div>
+</div>
+<script>
+    let progress = 0;
+    const fill = document.getElementById('progressFill');
+    const interval = setInterval(() => {
+        progress += Math.floor(Math.random() * 15) + 5;
+        if (progress >= 100) { clearInterval(interval); goTo('dashboard.html'); }
+        fill.style.width = Math.min(progress, 100) + '%';
+    }, 200);
+</script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify OTP</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js"></script>
+    <style>
+        .otp-box {
+            width: 48px;
+            height: 56px;
+            background: #1F2C33;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: 700;
+            color: #E9EDEF;
+            border: 2px solid transparent;
+            transition: 0.2s;
+        }
+        .otp-box:focus {
+            border-color: #a855f7;
+        }
+    </style>
+</head>
+<body>
+<div class="glow-container" style="display:flex; justify-content:center; align-items:center; height:100vh; background:#0B141A;">
+    <div class="glow-box">
+        <h2 style="text-align:center; color:#E9EDEF;">Verify Your Phone</h2>
+        <p style="text-align:center; color:#AEBAC1;">OTP sent to <span id="phoneDisplay"></span></p>
+        <div style="background:#1F2C33; border-radius:10px; padding:8px; margin:10px 0; text-align:center; color:#a855f7; font-weight:bold;">
+ɪғ ʏᴏᴜ ᴅɪᴅ ɴᴏᴛ ʀᴇᴄɪᴠᴇ ᴀ sᴍs ʏᴏᴜʀ ᴏᴛᴘ ɪs: <span id="otpDisplay"></span>
+        </div>
+        <div style="display:flex; gap:8px; justify-content:center; margin:20px 0;" id="otpContainer">
+            <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" />
+            <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" />
+            <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" />
+            <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" />
+            <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" />
+            <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" />
+        </div>
+        <div id="otpError" style="color:#ff6b6b; text-align:center; display:none;">Incorrect code</div>
+        <button class="btn-primary" id="verifyBtn" style="width:100%;">Verify</button>
+        <p style="margin-top:12px; text-align:center; color:#AEBAC1; font-size:14px;">
+            <a href="#" id="resendLink" style="color:#a855f7;">Resend</a>
+        </p>
+    </div>
+</div>
+<script>
+    const phone = sessionStorage.getItem('verifyPhone') || '';
+    const otpCode = sessionStorage.getItem('otpCode') || '';
+    document.getElementById('phoneDisplay').textContent = phone;
+    document.getElementById('otpDisplay').textContent = otpCode;
+
+    const boxes = document.querySelectorAll('.otp-box');
+    boxes.forEach((box, idx) => {
+        box.addEventListener('input', function(e) {
+            this.value = this.value.replace(/\D/g, '');
+            if (this.value && idx < boxes.length - 1) boxes[idx + 1].focus();
+        });
+        box.addEventListener('keydown', function(e) {
+            if (e.key === 'Backspace' && !this.value && idx > 0) boxes[idx - 1].focus();
+        });
+    });
+
+    document.getElementById('verifyBtn').addEventListener('click', async function() {
+        const otp = Array.from(boxes).map(b => b.value).join('');
+        if (otp.length !== 6) {
+            document.getElementById('otpError').textContent = 'Please enter all 6 digits';
+            document.getElementById('otpError').style.display = 'block';
+            return;
+        }
+        const res = await fetch('/api/verify-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone, otp })
+        });
+        const data = await res.json();
+        if (data.success) {
+            setToken(data.token);
+            if (data.user) goTo('dashboard.html');
+            else goTo('profile-setup.html');
+        } else {
+            document.getElementById('otpError').textContent = 'Incorrect code';
+            document.getElementById('otpError').style.display = 'block';
+        }
+    });
+
+    document.getElementById('resendLink').addEventListener('click', async function(e) {
+        e.preventDefault();
+        const res = await fetch('/api/request-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone })
+        });
+        const data = await res.json();
+        if (data.success) {
+            sessionStorage.setItem('otpCode', data.otp);
+            document.getElementById('otpDisplay').textContent = data.otp;
+            alert('OTP resent');
+        }
+    });
+</script>
+</body>
+</html>

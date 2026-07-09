@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Add Contact</title>
+    <script src="script.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background: #0B141A; color: #E9EDEF; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { width: 100%; max-width: 430px; padding: 20px; background: #111B21; min-height: 100vh; }
+        .header { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid #1F2C33; }
+        .header .back { color: #AEBAC1; cursor: pointer; font-size: 28px; }
+        .header .title { font-size: 20px; font-weight: 700; flex: 1; }
+        .input-group { margin: 16px 0; }
+        .input-group label { display: block; font-size: 14px; color: #7E8A95; margin-bottom: 4px; }
+        .input-group input { width: 100%; background: #1F2C33; border: none; color: #E9EDEF; padding: 12px; border-radius: 12px; font-size: 16px; outline: none; }
+        .btn { background: #14C37A; color: #111B21; border: none; padding: 14px; border-radius: 30px; font-weight: 600; font-size: 16px; cursor: pointer; width: 100%; margin-top: 12px; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .result-box { margin-top: 16px; padding: 12px; background: #1F2C33; border-radius: 12px; display: none; align-items: center; gap: 12px; }
+        .result-box .avatar { width: 44px; height: 44px; border-radius: 50%; background: #2A3942; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; overflow: hidden; }
+        .result-box .info { flex: 1; }
+        .result-box .info .name { font-weight: 500; }
+        .result-box .info .phone { font-size: 13px; color: #7E8A95; }
+        .result-box .action { background: #14C37A; color: #111B21; border: none; padding: 6px 16px; border-radius: 20px; font-weight: 600; cursor: pointer; }
+        .result-box .action.invite { background: #3B82F6; }
+        .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: #14C37A; color: #111B21; padding: 8px 20px; border-radius: 8px; font-weight: 600; z-index: 999; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .toast.error { background: #E74C3C; color: #fff; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <span class="back" id="backBtn"><i data-lucide="arrow-left" class="w-6 h-6"></i></span>
+        <div class="title">Add Contact</div>
+    </div>
+    <div class="input-group">
+        <label>Contact Name</label>
+        <input type="text" id="contactName" placeholder="Enter name" />
+    </div>
+    <div class="input-group">
+        <label>Phone Number</label>
+        <input type="tel" id="phoneNumber" placeholder="+234 800 000 0000" />
+    </div>
+    <button class="btn" id="addContactBtn">Add Contact</button>
+    <div class="result-box" id="resultBox"></div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+    lucide.createIcons();
+
+    const toast = document.getElementById('toast');
+    function showToast(text, isError = false) {
+        toast.textContent = text;
+        toast.className = 'toast' + (isError ? ' error' : '');
+        toast.style.display = 'block';
+        clearTimeout(toast._timeout);
+        toast._timeout = setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+
+    document.getElementById('backBtn').addEventListener('click', () => goTo('new-chat.html'));
+
+    const nameInput = document.getElementById('contactName');
+    const phoneInput = document.getElementById('phoneNumber');
+    const resultBox = document.getElementById('resultBox');
+
+    async function checkUser(phone) {
+        try {
+            const res = await fetch('/api/user-by-phone', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone })
+            });
+            const data = await res.json();
+            return data.success ? data.user : null;
+        } catch { return null; }
+    }
+
+    document.getElementById('addContactBtn').addEventListener('click', async function() {
+        const name = nameInput.value.trim();
+        const phone = phoneInput.value.trim();
+        if (!name || !phone) { showToast('Please fill all fields', true); return; }
+        this.disabled = true;
+        this.textContent = 'Checking...';
+        const user = await checkUser(phone);
+        this.disabled = false;
+        this.textContent = 'Add Contact';
+        if (user) {
+            resultBox.style.display = 'flex';
+            resultBox.innerHTML = `
+                <div class="avatar">${user.displayName?.charAt(0) || '?'}</div>
+                <div class="info">
+                    <div class="name">${user.displayName}</div>
+                    <div class="phone">${user.phone}</div>
+                </div>
+                <button class="action" id="chatBtn">Chat</button>
+            `;
+            document.getElementById('chatBtn').addEventListener('click', function() {
+                goTo(`chat.html?phone=${phone}&name=${encodeURIComponent(user.displayName)}`);
+            });
+            // Add to contacts if not already
+            let contacts = JSON.parse(localStorage.getItem('contacts') || '[]');
+            if (!contacts.find(c => c.phone === phone)) {
+                contacts.push({ phone, name: user.displayName, lastMsg: 'New contact', time: new Date().toLocaleDateString() });
+                localStorage.setItem('contacts', JSON.stringify(contacts));
+            }
+        } else {
+            resultBox.style.display = 'flex';
+            resultBox.innerHTML = `
+                <div class="avatar">${name.charAt(0).toUpperCase()}</div>
+                <div class="info">
+                    <div class="name">${name}</div>
+                    <div class="phone">${phone} (not on NEXora)</div>
+                </div>
+                <button class="action invite" id="inviteBtn">Invite</button>
+            `;
+            document.getElementById('inviteBtn').addEventListener('click', function() {
+                const link = 'https://nexora.app/invite/' + btoa(phone);
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(link).then(() => showToast('Invite link copied!')).catch(() => showToast('Link: ' + link));
+                } else {
+                    showToast('Link: ' + link);
+                }
+            });
+            // Still add as contact with "Invited" note
+            let contacts = JSON.parse(localStorage.getItem('contacts') || '[]');
+            if (!contacts.find(c => c.phone === phone)) {
+                contacts.push({ phone, name, lastMsg: 'Invited', time: new Date().toLocaleDateString() });
+                localStorage.setItem('contacts', JSON.stringify(contacts));
+            }
+        }
+    });
+</script>
+</body>
+</html>

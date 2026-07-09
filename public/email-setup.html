@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email (optional)</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js"></script>
+</head>
+<body>
+<div class="glow-container" style="display:flex; justify-content:center; align-items:center; height:100vh; background:#0B141A;">
+    <div class="glow-box">
+        <h2 style="text-align:center; color:#E9EDEF;">Email (optional)</h2>
+        <p style="text-align:center; color:#AEBAC1;">We'll use this for recovery</p>
+        <input type="email" id="emailInput" placeholder="Email address" style="width:100%; background:#1F2C33; color:#E9EDEF; padding:14px; border-radius:30px; border:none; margin-bottom:12px;" />
+        <button class="btn-primary" id="finishBtn" style="width:100%;">Finish Setup</button>
+        <button class="btn-secondary" id="skipBtn" style="margin-top:8px;">Skip</button>
+    </div>
+</div>
+<script>
+    async function saveEmail(email) {
+        // In a full app you would save this via API – for now just redirect
+        goTo('loading.html');
+    }
+    document.getElementById('finishBtn').addEventListener('click', () => saveEmail(document.getElementById('emailInput').value.trim()));
+    document.getElementById('skipBtn').addEventListener('click', () => saveEmail(''));
+</script>
+</body>
+</html>

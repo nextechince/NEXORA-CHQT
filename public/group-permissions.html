@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Group Permissions</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0" rel="stylesheet">
+    <script src="script.js"></script>
+    <style>
+        :root {
+            --bg-color: #0B141A;
+            --surface-color: #111B21;
+            --surface2: #1F2C33;
+            --text-primary: #E9EDEF;
+            --text-secondary: #AEBAC1;
+            --accent-color: #14C37A;
+            --divider-color: #2A3942;
+            --danger-color: #E74C3C;
+        }
+        .light-mode {
+            --bg-color: #F5F7F8;
+            --surface-color: #FFFFFF;
+            --surface2: #E4E6EB;
+            --text-primary: #1C252C;
+            --text-secondary: #607D8B;
+            --divider-color: #CFD8DC;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-primary); display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; transition: background-color 0.3s; }
+        .phone-container { width: 100%; max-width: 450px; background-color: var(--bg-color); min-height: 100vh; display: flex; flex-direction: column; position: relative; padding-bottom: 20px; }
+        header { padding: 16px 20px; display: flex; align-items: center; gap: 12px; background: var(--surface-color); border-bottom: 1px solid var(--divider-color); }
+        header .back-btn { color: var(--text-secondary); cursor: pointer; font-size: 28px; }
+        header h1 { font-size: 24px; font-weight: 700; flex: 1; }
+
+        .section-header { padding: 12px 20px 4px; font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+        .settings-item { display: flex; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--divider-color); }
+        .settings-item .left { flex: 1; display: flex; flex-direction: column; }
+        .settings-item .left .title { font-size: 16px; font-weight: 500; }
+        .settings-item .left .desc { font-size: 13px; color: var(--text-secondary); }
+        .settings-item .right { display: flex; align-items: center; gap: 8px; }
+        .toggle { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .toggle input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #37474f; transition: .3s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--accent-color); }
+        input:checked + .slider:before { transform: translateX(20px); }
+        .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: var(--accent-color); color: #111B21; padding: 8px 20px; border-radius: 8px; font-weight: 600; z-index: 999; display: none; }
+        .toast.error { background: var(--danger-color); color: #fff; }
+    </style>
+</head>
+<body>
+
+<div class="phone-container">
+    <header>
+        <span class="back-btn material-symbols-outlined" id="backBtn">arrow_back</span>
+        <h1>Group Permissions</h1>
+    </header>
+
+    <div class="section-header">Who can send messages</div>
+    <div class="settings-item">
+        <div class="left"><div class="title">All Members</div><div class="desc">Everyone can send messages</div></div>
+        <div class="right"><label class="toggle"><input type="checkbox" id="sendMessages"><span class="slider"></span></label></div>
+    </div>
+
+    <div class="section-header">Who can send media</div>
+    <div class="settings-item">
+        <div class="left"><div class="title">All Members</div><div class="desc">Everyone can send images, videos, and files</div></div>
+        <div class="right"><label class="toggle"><input type="checkbox" id="sendMedia"><span class="slider"></span></label></div>
+    </div>
+
+    <div class="section-header">Who can send links</div>
+    <div class="settings-item">
+        <div class="left"><div class="title">All Members</div><div class="desc">Everyone can send URLs</div></div>
+        <div class="right"><label class="toggle"><input type="checkbox" id="sendLinks"><span class="slider"></span></label></div>
+    </div>
+
+    <div class="section-header">Who can add members</div>
+    <div class="settings-item">
+        <div class="left"><div class="title">All Members</div><div class="desc">Everyone can add new people</div></div>
+        <div class="right"><label class="toggle"><input type="checkbox" id="addMembers"><span class="slider"></span></label></div>
+    </div>
+
+    <div class="section-header">Who can edit group info</div>
+    <div class="settings-item">
+        <div class="left"><div class="title">All Members</div><div class="desc">Everyone can change name and description</div></div>
+        <div class="right"><label class="toggle"><input type="checkbox" id="editGroupInfo"><span class="slider"></span></label></div>
+    </div>
+
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+    const toast = document.getElementById('toast');
+    function showToast(text, isError = false) {
+        toast.textContent = text;
+        toast.className = 'toast' + (isError ? ' error' : '');
+        toast.style.display = 'block';
+        clearTimeout(toast._timeout);
+        toast._timeout = setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        const ok = await checkAuth(true);
+        if (!ok) return;
+
+        document.getElementById('backBtn').addEventListener('click', () => goTo('communities.html'));
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const groupId = urlParams.get('id');
+        if (!groupId) { showToast('No group specified', true); return; }
+
+        const token = getToken();
+        let user = null;
+        try {
+            const res = await fetch('/api/me', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) });
+            const data = await res.json();
+            if (data.success) user = data.user;
+        } catch(e) {}
+
+        if (user && user.settings && user.settings.darkMode === false) {
+            document.body.classList.add('light-mode');
+        }
+
+        // Load current permissions
+        let perms = {};
+        try {
+            const res = await fetch(`/api/group/${groupId}`);
+            const data = await res.json();
+            if (data.success && data.group.permissions) {
+                perms = data.group.permissions;
+            }
+        } catch(e) {}
+
+        document.getElementById('sendMessages').checked = perms.sendMessages !== undefined ? perms.sendMessages : true;
+        document.getElementById('sendMedia').checked = perms.sendMedia !== undefined ? perms.sendMedia : true;
+        document.getElementById('sendLinks').checked = perms.sendLinks !== undefined ? perms.sendLinks : true;
+        document.getElementById('addMembers').checked = perms.addMembers !== undefined ? perms.addMembers : true;
+        document.getElementById('editGroupInfo').checked = perms.editGroupInfo !== undefined ? perms.editGroupInfo : true;
+
+        async function savePermissions() {
+            const updates = {
+                sendMessages: document.getElementById('sendMessages').checked,
+                sendMedia: document.getElementById('sendMedia').checked,
+                sendLinks: document.getElementById('sendLinks').checked,
+                addMembers: document.getElementById('addMembers').checked,
+                editGroupInfo: document.getElementById('editGroupInfo').checked
+            };
+            try {
+                const res = await fetch('/api/update-group-permissions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, groupId, permissions: updates })
+                });
+                const data = await res.json();
+                if (data.success) showToast('Permissions updated');
+                else showToast(data.error || 'Failed', true);
+            } catch(e) { showToast('Network error', true); }
+        }
+
+        document.querySelectorAll('input[type="checkbox"]').forEach(el => {
+            el.addEventListener('change', savePermissions);
+        });
+    });
+</script>
+</body>
+</html>

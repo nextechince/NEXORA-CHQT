@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Chat</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0" rel="stylesheet">
+    <script src="script.js"></script>
+    <style>
+        /* (all existing styles – keep from earlier) */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background: #0B141A; color: #E9EDEF; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .app { width: 100%; max-width: 430px; height: 100vh; max-height: 850px; background: #111B21; border-radius: 28px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 0 60px rgba(20,195,122,0.08); position: relative; }
+        .chat-header { padding: 10px 12px; display: flex; align-items: center; gap: 10px; background: #1F2C33; border-bottom: 1px solid #2A3942; flex-shrink: 0; }
+        .chat-header .back { color: #AEBAC1; cursor: pointer; font-size: 24px; }
+        .chat-header .avatar { width: 40px; height: 40px; border-radius: 50%; background: #2A3942; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; overflow: hidden; flex-shrink: 0; }
+        .chat-header .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .chat-header .info { flex: 1; min-width: 0; cursor: pointer; }
+        .chat-header .info .name { font-size: 16px; font-weight: 600; }
+        .chat-header .info .status { font-size: 12px; color: #7E8A95; }
+        .chat-header .menu { color: #AEBAC1; cursor: pointer; font-size: 24px; display: flex; gap: 12px; }
+        .messages { flex: 1; overflow-y: auto; padding: 12px 16px; background: #0B141A; display: flex; flex-direction: column; }
+        .message { max-width: 80%; margin: 2px 0; padding: 6px 12px; border-radius: 12px; word-wrap: break-word; position: relative; font-size: 15px; line-height: 1.4; }
+        .message.sent { align-self: flex-end; background: #14C37A; color: #111B21; border-bottom-right-radius: 4px; }
+        .message.received { align-self: flex-start; background: #1F2C33; color: #E9EDEF; border-bottom-left-radius: 4px; }
+        .message .time { font-size: 10px; opacity: 0.6; margin-top: 2px; text-align: right; }
+        .message .media { max-width: 200px; border-radius: 8px; display: block; margin: 4px 0; cursor: pointer; }
+        .message .media video { max-width: 200px; border-radius: 8px; cursor: pointer; }
+        .message .reactions { display: flex; flex-wrap: wrap; gap: 2px; margin-top: 4px; }
+        .message .reactions .reaction { background: rgba(255,255,255,0.1); padding: 0 6px; border-radius: 12px; font-size: 14px; cursor: pointer; }
+        .message .reactions .reaction .count { font-size: 10px; margin-left: 2px; }
+        .message .edited { font-size: 10px; opacity: 0.5; margin-left: 4px; }
+        .message .forward-badge { font-size: 10px; opacity: 0.6; display: block; margin-bottom: 2px; }
+        .input-area { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #1F2C33; border-top: 1px solid #2A3942; flex-shrink: 0; flex-wrap: wrap; }
+        .input-area .input-row { display: flex; align-items: center; gap: 8px; flex: 1; }
+        .input-area .emoji-btn, .input-area .attach-btn, .input-area .schedule-btn, .input-area .smart-reply-btn { color: #AEBAC1; cursor: pointer; font-size: 24px; }
+        .input-area .input-wrap { flex: 1; background: #2A3942; border-radius: 20px; padding: 4px 12px; display: flex; align-items: flex-end; min-height: 36px; }
+        .input-area .input-wrap textarea { flex: 1; background: transparent; border: none; color: #E9EDEF; resize: none; outline: none; font-size: 15px; padding: 6px 0; max-height: 100px; min-height: 24px; line-height: 1.4; }
+        .input-area .input-wrap textarea::placeholder { color: #7E8A95; }
+        .input-area .voice-btn { color: #14C37A; cursor: pointer; font-size: 24px; }
+        .input-area .send-btn { color: #14C37A; cursor: pointer; font-size: 24px; display: none; }
+        .input-area .view-once-label { color: #7E8A95; font-size: 12px; display: flex; align-items: center; gap: 4px; }
+        .input-area .view-once-label input { accent-color: #14C37A; }
+        .emoji-picker { display: none; background: #1F2C33; padding: 8px 12px; flex-wrap: wrap; gap: 4px; max-height: 120px; overflow-y: auto; border-top: 1px solid #2A3942; }
+        .emoji-picker.show { display: flex; }
+        .emoji-picker .emoji { font-size: 28px; cursor: pointer; padding: 2px; }
+        .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: #14C37A; color: #111B21; padding: 8px 20px; border-radius: 8px; font-weight: 600; z-index: 999; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .toast.error { background: #E74C3C; color: #fff; }
+        .context-menu { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #1F2C33; border-radius: 12px; padding: 6px 0; z-index: 999; min-width: 200px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); display: none; }
+        .context-menu .item { padding: 10px 16px; color: #E9EDEF; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 10px; border: none; background: transparent; width: 100%; text-align: left; }
+        .context-menu .item:hover { background: rgba(255,255,255,0.05); }
+        .context-menu .item.danger { color: #E74C3C; }
+        .reaction-picker { position: fixed; bottom: 160px; left: 50%; transform: translateX(-50%); background: #1F2C33; padding: 8px 12px; border-radius: 30px; display: flex; gap: 4px; z-index: 1000; box-shadow: 0 4px 20px rgba(0,0,0,0.5); display: none; }
+        .reaction-picker .reaction { font-size: 28px; cursor: pointer; padding: 4px; }
+        .reaction-picker .reaction:hover { background: rgba(255,255,255,0.1); border-radius: 50%; }
+        .file-card { background: rgba(255,255,255,0.05); border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; gap: 10px; max-width: 200px; cursor: pointer; }
+        .file-card .icon { font-size: 28px; }
+        .file-card .info { flex: 1; overflow: hidden; }
+        .file-card .info .name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .file-card .info .size { font-size: 11px; opacity: 0.6; }
+        .file-card .download-btn { color: #14C37A; cursor: pointer; font-size: 20px; }
+        .media-viewer { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.95); z-index: 999; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        .media-viewer.active { display: flex; }
+        .media-viewer .close { position: absolute; top: 20px; right: 20px; color: #fff; font-size: 32px; cursor: pointer; }
+        .media-viewer .download { position: absolute; bottom: 30px; right: 30px; color: #fff; background: rgba(255,255,255,0.2); padding: 12px 18px; border-radius: 30px; cursor: pointer; display: flex; align-items: center; gap: 8px; backdrop-filter: blur(4px); }
+        .media-viewer .media-content { max-width: 100%; max-height: 80vh; object-fit: contain; border-radius: 8px; }
+        .media-viewer .media-content video { max-width: 100%; max-height: 80vh; }
+    </style>
+</head>
+<body>
+
+<div class="app" id="chatApp">
+    <div class="chat-header">
+        <span class="back" id="backBtn"><i data-lucide="arrow-left" class="w-5 h-5"></i></span>
+        <div class="avatar" id="chatAvatar">U</div>
+        <div class="info" id="chatInfo">
+            <div class="name" id="chatName">Contact</div>
+            <div class="status" id="chatStatus">last seen recently</div>
+        </div>
+        <div class="menu">
+            <span id="menuBtn"><i data-lucide="more-vertical" class="w-5 h-5"></i></span>
+        </div>
+    </div>
+
+    <div class="messages" id="messagesContainer"></div>
+
+    <div class="input-area">
+        <div class="input-row">
+            <span class="emoji-btn" id="emojiBtn"><i data-lucide="smile" class="w-6 h-6"></i></span>
+            <span class="attach-btn" id="attachBtn">
+                <i data-lucide="paperclip" class="w-6 h-6"></i>
+                <input type="file" id="fileInput" multiple />
+            </span>
+            <span class="schedule-btn" id="scheduleBtn"><i data-lucide="calendar" class="w-6 h-6"></i></span>
+            <span class="smart-reply-btn" id="smartReplyBtn"><i data-lucide="sparkles" class="w-6 h-6"></i></span>
+            <div class="input-wrap">
+                <textarea id="msgInput" rows="1" placeholder="Message"></textarea>
+            </div>
+            <span class="voice-btn" id="voiceBtn"><i data-lucide="mic" class="w-6 h-6"></i></span>
+            <span class="send-btn" id="sendBtn"><i data-lucide="send" class="w-6 h-6"></i></span>
+        </div>
+        <div class="view-once-label">
+            <input type="checkbox" id="viewOnceToggle" /> View Once
+        </div>
+    </div>
+
+    <div class="emoji-picker" id="emojiPicker"></div>
+</div>
+
+<div id="toast" class="toast"></div>
+<div class="context-menu" id="contextMenu"></div>
+<div class="reaction-picker" id="reactionPicker"></div>
+
+<script>
+    // ---- Lucide Icons ----
+    function initIcons() { if (typeof lucide !== 'undefined') lucide.createIcons(); }
+    initIcons();
+
+    // ---- Toast ----
+    const toast = document.getElementById('toast');
+    function showToast(text, isError = false) {
+        toast.textContent = text;
+        toast.className = 'toast' + (isError ? ' error' : '');
+        toast.style.display = 'block';
+        clearTimeout(toast._timeout);
+        toast._timeout = setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+
+    // ---- Main Chat Logic ----
+    document.addEventListener('DOMContentLoaded', async function() {
+        const ok = await checkAuth(true);
+        if (!ok) return;
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const contactPhone = urlParams.get('phone') || '';
+        const contactName = decodeURIComponent(urlParams.get('name') || '');
+        const token = getToken();
+
+        let myPhone = null;
+        let lastTimestamp = null;
+        let contactData = null;
+        let chatIdFinal = '';
+
+        // ---- DOM refs ----
+        const container = document.getElementById('messagesContainer');
+        const chatName = document.getElementById('chatName');
+        const chatAvatar = document.getElementById('chatAvatar');
+        const chatStatus = document.getElementById('chatStatus');
+        const msgInput = document.getElementById('msgInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const voiceBtn = document.getElementById('voiceBtn');
+        const attachBtn = document.getElementById('attachBtn');
+        const fileInput = document.getElementById('fileInput');
+        const emojiBtn = document.getElementById('emojiBtn');
+        const emojiPicker = document.getElementById('emojiPicker');
+        const contextMenu = document.getElementById('contextMenu');
+        const reactionPicker = document.getElementById('reactionPicker');
+        const scheduleBtn = document.getElementById('scheduleBtn');
+        const smartReplyBtn = document.getElementById('smartReplyBtn');
+        const viewOnceToggle = document.getElementById('viewOnceToggle');
+
+        // ---- Get my phone ----
+        async function getMyPhone() {
+            const res = await fetch('/api/me', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) });
+            const data = await res.json();
+            return data.success ? data.user.phone : null;
+        }
+        myPhone = await getMyPhone();
+        chatIdFinal = [myPhone, contactPhone].sort().join('_');
+
+        // ---- Fetch contact data ----
+        async function fetchContactData() {
+            if (!contactPhone) return;
+            try {
+                const res = await fetch('/api/user-by-phone', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: contactPhone })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    contactData = data.user;
+                    chatName.textContent = contactData.displayName || contactName || 'Unknown';
+                    chatStatus.textContent = contactData.banned ? 'Banned' : 'last seen recently';
+                    if (contactData.avatar) {
+                        chatAvatar.innerHTML = `<img src="${contactData.avatar}" alt="avatar" />`;
+                    } else {
+                        chatAvatar.textContent = (contactData.displayName || 'U').charAt(0).toUpperCase();
+                    }
+                } else {
+                    chatName.textContent = contactName || 'Unknown';
+                    chatAvatar.textContent = (contactName || 'U').charAt(0).toUpperCase();
+                }
+            } catch(e) {
+                chatName.textContent = contactName || 'Unknown';
+                chatAvatar.textContent = (contactName || 'U').charAt(0).toUpperCase();
+            }
+        }
+        await fetchContactData();
+
+        // ---- Socket.io ----
+        const socket = connectSocket(token);
+        if (socket) {
+            socket.on('new-message', (data) => {
+                if (data.chatId === chatIdFinal) {
+                    appendMessage(data.message);
+                    lastTimestamp = data.message.timestamp;
+                }
+            });
+            socket.on('reaction-updated', (data) => {
+                if (data.chatId === chatIdFinal) {
+                    updateReactions(data.messageId, data.reactions);
+                }
+            });
+            socket.on('message-edited', (data) => {
+                if (data.chatId === chatIdFinal) {
+                    updateMessageText(data.messageId, data.newText);
+                }
+            });
+            socket.on('message-deleted', (data) => {
+                if (data.chatId === chatIdFinal) {
+                    removeMessage(data.messageId);
+                }
+            });
+            socket.on('system-message', (data) => {
+                appendMessage(data.message);
+            });
+        }
+
+        // ---- Emoji picker ----
+        const emojis = ['😀','😁','😂','🤣','😃','😄','😅','😆','😉','😊','😋','😎','😍','🥰','😘','😗','😙','😚','☺️','🙂','🤗','🤩','🤔','🤨','😐','😑','😶','🙄','😏','😣','😥','😮','🤐','😯','😪','😫','😴','😌','😛','😜','😝','🤤','😒','😓','😔','😕','🙃','🤑','😲','☹️','🙁','😖','😞','😟','😤','😢','😭','😦','😧','😨','😩','🤯','😬','😰','😱','🥵','🥶','😳','🤪','😵','😡','😠','🤬'];
+        emojis.forEach(e => {
+            const span = document.createElement('span');
+            span.className = 'emoji';
+            span.textContent = e;
+            span.addEventListener('click', function() {
+                msgInput.value += this.textContent;
+                msgInput.focus();
+                toggleSendButton();
+                emojiPicker.classList.remove('show');
+            });
+            emojiPicker.appendChild(span);
+        });
+
+        // ---- Send button toggle ----
+        function toggleSendButton() {
+            if (msgInput.value.trim()) {
+                sendBtn.style.display = 'inline';
+                voiceBtn.style.display = 'none';
+            } else {
+                sendBtn.style.display = 'none';
+                voiceBtn.style.display = 'inline';
+            }
+        }
+        msgInput.addEventListener('input', toggleSendButton);
+        msgInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                const text = msgInput.value.trim();
+                if (text) sendMessage(text);
+            }
+        });
+
+        // ---- Send message ----
+        async function sendMessage(text, type = 'text', file = null, fileName = null) {
+            if (!text && !file) return;
+            const payload = { token, to: contactPhone, text, type };
+            if (file) payload.file = file;
+            if (fileName) payload.fileName = fileName;
+            payload.viewOnce = viewOnceToggle.checked;
+
+            const res = await fetch('/api/send-message', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.success) {
+                appendMessage(data.message || { sender: myPhone, text, type, file, fileName, timestamp: new Date().toISOString(), viewOnce: payload.viewOnce });
+                msgInput.value = '';
+                toggleSendButton();
+                if (data.message && data.message.timestamp) {
+                    lastTimestamp = data.message.timestamp;
+                }
+                if (viewOnceToggle.checked) viewOnceToggle.checked = false;
+            } else {
+                showToast(data.error || 'Error sending message', true);
+            }
+        }
+
+        sendBtn.addEventListener('click', function() {
+            const text = msgInput.value.trim();
+            if (text) sendMessage(text);
+        });
+
+        voiceBtn.addEventListener('click', function() {
+            showToast('🎤 Voice recording started...');
+        });
+
+        // ---- File attachment ----
+        fileInput.addEventListener('change', function(e) {
+            const files = Array.from(this.files);
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    const fileData = ev.target.result;
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    let type = 'file';
+                    if (['jpg','jpeg','png','gif','webp'].includes(ext)) type = 'image';
+                    else if (['mp4','mov','avi','mkv','webm'].includes(ext)) type = 'video';
+                    sendMessage('', type, fileData, file.name);
+                };
+                reader.readAsDataURL(file);
+            });
+            fileInput.value = '';
+        });
+
+        // ---- Schedule message ----
+        scheduleBtn.addEventListener('click', function() {
+            const text = msgInput.value.trim();
+            if (!text) { showToast('Enter a message first', true); return; }
+            const datetime = prompt('Enter date/time (YYYY-MM-DD HH:MM):');
+            if (!datetime) return;
+            const scheduledAt = new Date(datetime).getTime();
+            if (isNaN(scheduledAt)) { showToast('Invalid date/time', true); return; }
+            fetch('/api/schedule-message', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token, to: contactPhone, text, scheduledAt })
+            }).then(res => res.json())
+              .then(data => {
+                  if (data.success) {
+                      showToast('Message scheduled for ' + datetime);
+                      msgInput.value = '';
+                      toggleSendButton();
+                  } else {
+                      showToast('Failed to schedule', true);
+                  }
+              });
+        });
+
+        // ---- Smart Reply ----
+        smartReplyBtn.addEventListener('click', async function() {
+            const text = msgInput.value.trim();
+            if (!text) { showToast('Enter a message first', true); return; }
+            const res = await fetch('/api/smart-reply', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token, message: text })
+            });
+            const data = await res.json();
+            if (data.reply) {
+                msgInput.value = data.reply;
+                msgInput.focus();
+                toggleSendButton();
+            } else {
+                showToast('Failed to get reply', true);
+            }
+        });
+
+        // ---- Emoji toggle ----
+        emojiBtn.addEventListener('click', function() {
+            emojiPicker.classList.toggle('show');
+        });
+
+        // ---- Append message ----
+        function appendMessage(msg) {
+            const placeholder = container.querySelector('.empty-state');
+            if (placeholder) placeholder.remove();
+
+            const isMe = msg.sender === myPhone;
+            const div = document.createElement('div');
+            div.className = `message ${isMe ? 'sent' : 'received'}`;
+            div.dataset.msgId = msg.id || Date.now().toString();
+            div.dataset.sender = msg.sender;
+            div.dataset.timestamp = msg.timestamp;
+
+            let content = '';
+            if (msg.forwarded) {
+                content += `<div class="forward-badge">📤 Forwarded from ${msg.originalSender || 'Unknown'}</div>`;
+            }
+            if (msg.text) content += msg.text;
+            if (msg.file && !msg.viewOnce) {
+                if (msg.type === 'image') {
+                    content += `<img src="${msg.file}" class="media" data-file="${msg.file}" data-type="image" />`;
+                } else if (msg.type === 'video') {
+                    content += `<video controls class="media" data-file="${msg.file}" data-type="video"><source src="${msg.file}" /></video>`;
+                } else if (msg.type === 'sticker') {
+                    content += `<img src="${msg.file}" style="max-width:120px;" />`;
+                } else {
+                    const fileName = msg.fileName || 'file';
+                    const fileSize = msg.file ? Math.round((msg.file.length * 3/4) / 1024) : 0;
+                    content += `
+                        <div class="file-card" data-file="${msg.file}" data-type="file" data-name="${fileName}">
+                            <span class="icon">📄</span>
+                            <div class="info">
+                                <div class="name">${fileName}</div>
+                                <div class="size">${fileSize} KB</div>
+                            </div>
+                            <span class="download-btn"><i data-lucide="download" class="w-4 h-4"></i></span>
+                        </div>
+                    `;
+                }
+            } else if (msg.file && msg.viewOnce) {
+                content += `<div class="view-once-media" data-message-id="${msg.id}" data-chat-id="${chatIdFinal}" style="cursor:pointer;background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;text-align:center;">
+                            <span>📷 View Once Media</span>
+                            <span style="display:block;font-size:12px;color:#7E8A95;">Tap to view (will disappear)</span>
+                        </div>`;
+            }
+
+            const time = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const editedBadge = msg.edited ? '<span class="edited">(edited)</span>' : '';
+            let reactionsHtml = '';
+            if (msg.reactions && msg.reactions.length > 0) {
+                const grouped = msg.reactions.reduce((acc, r) => {
+                    acc[r.reaction] = (acc[r.reaction] || 0) + 1;
+                    return acc;
+                }, {});
+                reactionsHtml = `<div class="reactions">`;
+                Object.keys(grouped).forEach(emoji => {
+                    reactionsHtml += `<span class="reaction" data-emoji="${emoji}">${emoji} <span class="count">${grouped[emoji]}</span></span>`;
+                });
+                reactionsHtml += `</div>`;
+            }
+
+            div.innerHTML = `
+                ${content}
+                <div class="time">${time} ${editedBadge}</div>
+                ${reactionsHtml}
+            `;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+
+            // View Once click
+            const viewOnceEl = div.querySelector('.view-once-media');
+            if (viewOnceEl) {
+                viewOnceEl.addEventListener('click', async function() {
+                    const msgId = this.dataset.messageId;
+                    const chatId = this.dataset.chatId;
+                    const res = await fetch('/api/view-once', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token, chatId, messageId: msgId })
+                    });
+                    const data = await res.json();
+                    if (data.success && data.file) {
+                        // Show media in viewer
+                        openMediaViewer(data.file, 'image');
+                        // Update message text
+                        this.parentElement.innerHTML = `<div class="time">View Once media (expired)</div>`;
+                    } else {
+                        showToast('Media expired', true);
+                    }
+                });
+            }
+
+            // Add click listeners for media
+            const mediaEl = div.querySelector('.media');
+            if (mediaEl) {
+                mediaEl.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const file = this.dataset.file;
+                    const type = this.dataset.type || 'image';
+                    openMediaViewer(file, type);
+                });
+            }
+            const fileCard = div.querySelector('.file-card');
+            if (fileCard) {
+                fileCard.addEventListener('click', function(e) {
+                    if (e.target.closest('.download-btn')) return;
+                    const file = this.dataset.file;
+                    const name = this.dataset.name;
+                    downloadFile(file, name);
+                });
+                const downloadBtn = fileCard.querySelector('.download-btn');
+                if (downloadBtn) {
+                    downloadBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        const file = fileCard.dataset.file;
+                        const name = fileCard.dataset.name;
+                        downloadFile(file, name);
+                    });
+                }
+            }
+
+            addLongPress(div);
+            initIcons();
+        }
+
+        // ---- Update reactions, edit, delete functions (same as before) ----
+        function updateReactions(messageId, reactions) {
+            const msgEl = container.querySelector(`.message[data-msgid="${messageId}"]`);
+            if (!msgEl) return;
+            let reactionsDiv = msgEl.querySelector('.reactions');
+            if (!reactionsDiv) {
+                reactionsDiv = document.createElement('div');
+                reactionsDiv.className = 'reactions';
+                msgEl.appendChild(reactionsDiv);
+            }
+            reactionsDiv.innerHTML = '';
+            if (reactions && reactions.length > 0) {
+                const grouped = reactions.reduce((acc, r) => {
+                    acc[r.reaction] = (acc[r.reaction] || 0) + 1;
+                    return acc;
+                }, {});
+                Object.keys(grouped).forEach(emoji => {
+                    const span = document.createElement('span');
+                    span.className = 'reaction';
+                    span.dataset.emoji = emoji;
+                    span.innerHTML = `${emoji} <span class="count">${grouped[emoji]}</span>`;
+                    reactionsDiv.appendChild(span);
+                });
+            }
+        }
+
+        function updateMessageText(messageId, newText) {
+            const msgEl = container.querySelector(`.message[data-msgid="${messageId}"]`);
+            if (!msgEl) return;
+            // Remove old text content (keep media etc.)
+            const textNode = msgEl.childNodes[0];
+            if (textNode && textNode.nodeType === 3) {
+                textNode.textContent = newText;
+            } else {
+                const newTextNode = document.createTextNode(newText);
+                msgEl.insertBefore(newTextNode, msgEl.querySelector('.time'));
+            }
+            // Add edited badge if not present
+            if (!msgEl.querySelector('.edited')) {
+                const timeEl = msgEl.querySelector('.time');
+                if (timeEl) {
+                    const badge = document.createElement('span');
+                    badge.className = 'edited';
+                    badge.textContent = ' (edited)';
+                    timeEl.appendChild(badge);
+                }
+            }
+        }
+
+        function removeMessage(messageId) {
+            const msgEl = container.querySelector(`.message[data-msgid="${messageId}"]`);
+            if (msgEl) msgEl.remove();
+        }
+
+        // ---- Load messages ----
+        async function loadMessages() {
+            if (!contactPhone) return;
+            const res = await fetch('/api/get-messages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token, withUser: contactPhone })
+            });
+            const data = await res.json();
+            if (data.success) {
+                container.innerHTML = '';
+                if (data.messages.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state" style="text-align:center;color:#7E8A95;padding:40px 0;">
+                            <i data-lucide="message-circle" style="display:block;margin-bottom:12px;font-size:48px;"></i>
+                            <p>No messages yet</p>
+                            <p style="font-size:13px;">Say hello!</p>
+                        </div>
+                    `;
+                    initIcons();
+                } else {
+                    data.messages.forEach(msg => appendMessage(msg));
+                    if (data.messages.length > 0) {
+                        lastTimestamp = data.messages[data.messages.length - 1].timestamp;
+                    }
+                }
+            }
+        }
+
+        // ---- Poll fallback ----
+        async function pollMessages() {
+            if (!contactPhone || !lastTimestamp) return;
+            try {
+                const res = await fetch('/api/get-messages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, withUser: contactPhone, since: lastTimestamp })
+                });
+                const data = await res.json();
+                if (data.success && data.messages && data.messages.length > 0) {
+                    data.messages.forEach(msg => appendMessage(msg));
+                    lastTimestamp = data.messages[data.messages.length - 1].timestamp;
+                }
+            } catch(e) { console.warn('Poll error:', e); }
+        }
+
+        // ---- Long press context menu ----
+        let longPressTimer = null;
+        let isLongPress = false;
+
+        function addLongPress(el) {
+            el.addEventListener('touchstart', function(e) {
+                longPressTimer = setTimeout(() => {
+                    isLongPress = true;
+                    showContextMenu(this);
+                }, 500);
+            });
+            el.addEventListener('touchend', function() {
+                clearTimeout(longPressTimer);
+                isLongPress = false;
+            });
+            el.addEventListener('touchmove', function() {
+                clearTimeout(longPressTimer);
+                isLongPress = false;
+            });
+            el.addEventListener('mousedown', function(e) {
+                longPressTimer = setTimeout(() => {
+                    isLongPress = true;
+                    showContextMenu(this);
+                }, 500);
+            });
+            el.addEventListener('mouseup', function() {
+                clearTimeout(longPressTimer);
+                isLongPress = false;
+            });
+            el.addEventListener('mouseleave', function() {
+                clearTimeout(longPressTimer);
+                isLongPress = false;
+            });
+        }
+
+        function showContextMenu(msgEl) {
+            const msgId = msgEl.dataset.msgId;
+            const sender = msgEl.dataset.sender;
+            const isMine = sender === myPhone;
+            const menu = document.getElementById('contextMenu');
+            menu.innerHTML = '';
+
+            const items = [
+                { label: 'React', action: 'react' },
+                { label: 'Reply', action: 'reply' },
+                { label: 'Forward', action: 'forward' }
+            ];
+            if (isMine) {
+                items.push({ label: 'Edit', action: 'edit' });
+                items.push({ label: 'Delete for me', action: 'delete_me' });
+                items.push({ label: 'Delete for everyone', action: 'delete_all' });
+            } else {
+                items.push({ label: 'Report', action: 'report' });
+                items.push({ label: 'Delete for me', action: 'delete_me' });
+            }
+
+            items.forEach(item => {
+                const btn = document.createElement('button');
+                btn.className = 'item' + (item.action === 'delete_all' || item.action === 'delete_me' || item.action === 'report' ? ' danger' : '');
+                btn.textContent = item.label;
+                btn.addEventListener('click', function() {
+                    menu.style.display = 'none';
+                    handleMessageAction(item.action, msgId, msgEl);
+                });
+                menu.appendChild(btn);
+            });
+
+            menu.style.display = 'block';
+            setTimeout(() => {
+                document.addEventListener('click', function closeMenu(e) {
+                    if (!menu.contains(e.target)) {
+                        menu.style.display = 'none';
+                        document.removeEventListener('click', closeMenu);
+                    }
+                });
+            }, 100);
+        }
+
+        // ---- Handle context menu actions ----
+        async function handleMessageAction(action, msgId, msgEl) {
+            if (action === 'react') {
+                const picker = document.getElementById('reactionPicker');
+                picker.style.display = 'flex';
+                picker.innerHTML = '';
+                const emojis = ['❤️','😂','😍','😡','👍','👎','🔥','💯','🥰','🤣','😱','😢','🙏','✨','💀'];
+                emojis.forEach(e => {
+                    const span = document.createElement('span');
+                    span.className = 'reaction';
+                    span.textContent = e;
+                    span.addEventListener('click', async function() {
+                        picker.style.display = 'none';
+                        const res = await fetch('/api/message-react', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ token, chatId: chatIdFinal, messageId: msgId, reaction: e })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            updateReactions(msgId, data.reactions);
+                        }
+                    });
+                    picker.appendChild(span);
+                });
+                setTimeout(() => { picker.style.display = 'none'; }, 3000);
+                return;
+            }
+            if (action === 'reply') {
+                const text = prompt('Reply:');
+                if (text) sendMessage(text);
+                return;
+            }
+            if (action === 'forward') {
+                const target = prompt('Enter phone number to forward to:');
+                if (target && target.trim()) {
+                    const res = await fetch('/api/forward-message', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token, to: target.trim(), messageId: msgId, chatId: chatIdFinal })
+                    });
+                    const data = await res.json();
+                    if (data.success) showToast('Forwarded');
+                    else showToast('Forward failed', true);
+                }
+                return;
+            }
+            if (action === 'edit') {
+                if (!confirm('Edit this message?')) return;
+                const newText = prompt('Edit message:', msgEl.textContent.trim());
+                if (newText !== null && newText !== msgEl.textContent.trim()) {
+                    const res = await fetch('/api/edit-message', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token, chatId: chatIdFinal, messageId: msgId, newText })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        updateMessageText(msgId, newText);
+                    } else {
+                        showToast(data.error || 'Edit failed', true);
+                    }
+                }
+                return;
+            }
+            if (action === 'delete_me') {
+                if (!confirm('Delete this message for you?')) return;
+                msgEl.remove();
+                showToast('Deleted for you');
+                return;
+            }
+            if (action === 'delete_all') {
+                if (!confirm('Delete this message for everyone?')) return;
+                const res = await fetch('/api/delete-message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, chatId: chatIdFinal, messageId: msgId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    msgEl.remove();
+                    showToast('Deleted for everyone');
+                } else {
+                    showToast(data.error || 'Delete failed', true);
+                }
+                return;
+            }
+            if (action === 'report') {
+                const reason = prompt('Reason for reporting:');
+                if (reason) {
+                    await fetch('/api/report', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, target: 'message', targetId: msgId, reason }) });
+                    showToast('Report sent');
+                }
+                return;
+            }
+        }
+
+        // ---- Media viewer ----
+        const viewer = document.createElement('div');
+        viewer.className = 'media-viewer';
+        viewer.innerHTML = `
+            <span class="close">✕</span>
+            <div id="mediaContent"></div>
+            <span class="download">⬇ Download</span>
+        `;
+        document.body.appendChild(viewer);
+        let currentMediaData = null;
+
+        function openMediaViewer(fileData, type) {
+            currentMediaData = fileData;
+            viewer.classList.add('active');
+            const content = viewer.querySelector('#mediaContent');
+            if (type === 'image') {
+                content.innerHTML = `<img src="${fileData}" class="media-content" />`;
+            } else if (type === 'video') {
+                content.innerHTML = `<video controls autoplay class="media-content"><source src="${fileData}" /></video>`;
+            }
+        }
+
+        viewer.querySelector('.close').addEventListener('click', function() {
+            viewer.classList.remove('active');
+            viewer.querySelector('#mediaContent').innerHTML = '';
+        });
+        viewer.querySelector('.download').addEventListener('click', function() {
+            if (currentMediaData) {
+                const ext = currentMediaData.startsWith('data:image') ? '.jpg' : '.mp4';
+                downloadFile(currentMediaData, 'media' + ext);
+            }
+        });
+        viewer.addEventListener('click', function(e) {
+            if (e.target === viewer) {
+                viewer.classList.remove('active');
+                viewer.querySelector('#mediaContent').innerHTML = '';
+            }
+        });
+
+        function downloadFile(dataUrl, fileName) {
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = fileName || 'file';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('Downloading...');
+        }
+
+        // ---- Back ----
+        document.getElementById('backBtn').addEventListener('click', () => history.back());
+
+        // ---- Close pickers ----
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.input-area') && !e.target.closest('.emoji-picker')) {
+                emojiPicker.classList.remove('show');
+            }
+            if (!e.target.closest('.reaction-picker')) {
+                document.getElementById('reactionPicker').style.display = 'none';
+            }
+        });
+
+        // ---- Init ----
+        await loadMessages();
+        setInterval(pollMessages, 3000);
+        toggleSendButton();
+
+        console.log('✅ Chat ready for', contactPhone);
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Security</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0" rel="stylesheet">
+    <script src="script.js"></script>
+    <style>
+        /* base styles */
+        :root {
+            --bg-color: #12181b;
+            --surface-color: #1a2226;
+            --text-primary: #ffffff;
+            --text-secondary: #90a4ae;
+            --divider-color: #263238;
+            --accent-color: #00cc76;
+            --danger-color: #ef5350;
+        }
+        .light-mode {
+            --bg-color: #f5f7f8;
+            --surface-color: #ffffff;
+            --text-primary: #1c252c;
+            --text-secondary: #607d8b;
+            --divider-color: #cfd8dc;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-primary); display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; transition: background-color 0.3s; }
+        .phone-container { width: 100%; max-width: 450px; background-color: var(--bg-color); min-height: 100vh; display: flex; flex-direction: column; position: relative; padding-bottom: 20px; }
+        header { padding: 16px 20px; display: flex; align-items: center; gap: 12px; }
+        header .back-btn { color: var(--text-secondary); cursor: pointer; font-size: 28px; }
+        header h1 { font-size: 24px; font-weight: 700; flex: 1; }
+        .section-header { padding: 12px 20px 4px 20px; font-size: 13px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+        .settings-item { display: flex; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--divider-color); }
+        .settings-item .left { display: flex; flex-direction: column; flex: 1; }
+        .settings-item .left .title { font-size: 16px; font-weight: 500; }
+        .settings-item .left .sub { font-size: 13px; color: var(--text-secondary); }
+        .settings-item .right { display: flex; align-items: center; gap: 8px; }
+        .toggle { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .toggle input { opacity: 0; width: 0; height: 0; }
+        .toggle .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #37474f; transition: .3s; border-radius: 24px; }
+        .toggle .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+        .toggle input:checked + .slider { background-color: var(--accent-color); }
+        .toggle input:checked + .slider:before { transform: translateX(20px); }
+        .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: var(--accent-color); color: #111619; padding: 10px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; z-index: 999; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .toast.error { background: var(--danger-color); color: #fff; }
+    </style>
+</head>
+<body>
+<div class="phone-container">
+    <header>
+        <span class="back-btn material-symbols-outlined" id="backBtn">arrow_back</span>
+        <h1>Security</h1>
+    </header>
+
+    <div class="section-header">SCREEN LOCK</div>
+    <div class="settings-item">
+        <div class="left"><div class="title">PIN Lock</div><div class="sub">Require PIN to open NEXora CHQT</div></div>
+        <div class="right"><label class="toggle"><input type="checkbox" id="pinLock"><span class="slider"></span></label></div>
+    </div>
+    <div class="settings-item">
+        <div class="left"><div class="title">Fingerprint Lock</div><div class="sub">Use fingerprint to unlock</div></div>
+        <div class="right"><label class="toggle"><input type="checkbox" id="fingerprintLock"><span class="slider"></span></label></div>
+    </div>
+    <div class="settings-item">
+        <div class="left"><div class="title">Face Unlock</div><div class="sub">Use face ID to unlock</div></div>
+        <div class="right"><label class="toggle"><input type="checkbox" id="faceUnlock"><span class="slider"></span></label></div>
+    </div>
+
+    <div class="section-header">ACCOUNT SECURITY</div>
+    <div class="settings-item">
+        <div class="left"><div class="title">Two-Factor Authentication</div><div class="sub">Extra layer of account protection</div></div>
+        <div class="right"><label class="toggle"><input type="checkbox" id="twoFactor"><span class="slider"></span></label></div>
+    </div>
+    <div class="settings-item">
+        <div class="left"><div class="title">Login Alerts</div><div class="sub">Get notified of new sign-ins</div></div>
+        <div class="right"><label class="toggle"><input type="checkbox" id="loginAlerts"><span class="slider"></span></label></div>
+    </div>
+
+    <div class="section-header">DEVICES</div>
+    <div class="settings-item" onclick="goTo('settings-linked.html')">
+        <div class="left"><div class="title">Active Sessions</div><div class="sub">View devices logged into your account</div></div>
+        <div class="right"><span class="material-symbols-outlined" style="color:var(--text-secondary);">chevron_right</span></div>
+    </div>
+    <div class="settings-item" onclick="goTo('settings-linked.html')">
+        <div class="left"><div class="title">Trusted Devices</div><div class="sub">Devices that don't require 2FA</div></div>
+        <div class="right"><span class="material-symbols-outlined" style="color:var(--text-secondary);">chevron_right</span></div>
+    </div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+    const toast = document.getElementById('toast');
+    function showToast(text, isError = false) {
+        toast.textContent = text;
+        toast.className = 'toast' + (isError ? ' error' : '');
+        toast.style.display = 'block';
+        clearTimeout(toast._timeout);
+        toast._timeout = setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        const ok = await checkAuth(true);
+        if (!ok) return;
+        document.getElementById('backBtn').addEventListener('click', () => goTo('settings.html'));
+
+        const token = getToken();
+        let user = null;
+        try {
+            const res = await fetch('/api/me', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) });
+            const data = await res.json();
+            if (data.success) user = data.user;
+        } catch(e) { showToast('Failed to load settings', true); }
+
+        if (user && user.settings && user.settings.security) {
+            const s = user.settings.security;
+            document.getElementById('pinLock').checked = s.pinLock || false;
+            document.getElementById('fingerprintLock').checked = s.fingerprintLock || false;
+            document.getElementById('faceUnlock').checked = s.faceUnlock || false;
+            document.getElementById('twoFactor').checked = s.twoFactor || false;
+            document.getElementById('loginAlerts').checked = s.loginAlerts || false;
+        }
+
+        if (user && user.settings && user.settings.darkMode === false) {
+            document.body.classList.add('light-mode');
+        }
+
+        async function saveSecurity() {
+            const updates = {
+                settings: {
+                    security: {
+                        pinLock: document.getElementById('pinLock').checked,
+                        fingerprintLock: document.getElementById('fingerprintLock').checked,
+                        faceUnlock: document.getElementById('faceUnlock').checked,
+                        twoFactor: document.getElementById('twoFactor').checked,
+                        loginAlerts: document.getElementById('loginAlerts').checked
+                    }
+                }
+            };
+            try {
+                const res = await fetch('/api/update-profile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, updates }) });
+                const data = await res.json();
+                if (data.success) showToast('Security settings updated');
+                else showToast('Failed to save', true);
+            } catch(e) { showToast('Network error', true); }
+        }
+
+        document.querySelectorAll('input[type="checkbox"]').forEach(el => el.addEventListener('change', saveSecurity));
+    });
+</script>
+</body>
+</html>

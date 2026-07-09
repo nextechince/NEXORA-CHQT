@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Channel Members</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="script.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background: #0B141A; color: #E9EDEF; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .app { width: 100%; max-width: 430px; height: 100vh; max-height: 850px; background: #111B21; border-radius: 28px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 0 60px rgba(20,195,122,0.08); position: relative; }
+        .header { padding: 16px 20px; display: flex; align-items: center; gap: 12px; background: #111B21; border-bottom: 1px solid #1F2C33; }
+        .header .back { color: #7E8A95; cursor: pointer; font-size: 24px; }
+        .header .title { font-size: 20px; font-weight: 700; flex: 1; }
+
+        .content { flex: 1; overflow-y: auto; padding: 16px; }
+        .member-item { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid #1F2C33; }
+        .member-item .avatar { width: 36px; height: 36px; border-radius: 50%; background: #2A3942; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; overflow: hidden; margin-right: 12px; }
+        .member-item .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .member-item .info { flex: 1; }
+        .member-item .info .name { font-size: 15px; font-weight: 500; }
+        .member-item .info .role { font-size: 12px; color: #7E8A95; }
+        .member-item .actions { display: flex; gap: 8px; }
+        .member-item .actions button { background: transparent; border: none; color: #7E8A95; cursor: pointer; padding: 4px; }
+        .member-item .actions button:hover { color: #E9EDEF; }
+
+        .add-btn { width: 100%; padding: 12px; background: #1F2C33; border: none; border-radius: 12px; color: #E9EDEF; font-weight: 600; cursor: pointer; margin-top: 8px; text-align: center; }
+        .add-btn:hover { background: #2A3942; }
+
+        .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: #14C37A; color: #111B21; padding: 8px 20px; border-radius: 8px; font-weight: 600; z-index: 999; display: none; }
+        .toast.error { background: #E74C3C; color: #fff; }
+    </style>
+</head>
+<body>
+
+<div class="app">
+    <div class="header">
+        <div class="back" id="backBtn"><i data-lucide="arrow-left" class="w-5 h-5"></i></div>
+        <div class="title">Members</div>
+    </div>
+
+    <div class="content" id="membersContainer">
+        <!-- dynamic -->
+    </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+    lucide.createIcons();
+    const toast = document.getElementById('toast');
+    function showToast(text, isError = false) {
+        toast.textContent = text;
+        toast.className = 'toast' + (isError ? ' error' : '');
+        toast.style.display = 'block';
+        clearTimeout(toast._timeout);
+        toast._timeout = setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        const ok = await checkAuth(true);
+        if (!ok) return;
+
+        document.getElementById('backBtn').addEventListener('click', () => goTo('communities.html'));
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const channelId = urlParams.get('id');
+        if (!channelId) { showToast('No channel specified', true); return; }
+
+        const token = getToken();
+        let members = [];
+        let isAdmin = false;
+        let myPhone = null;
+
+        try {
+            // Get current user
+            const meRes = await fetch('/api/me', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) });
+            const meData = await meRes.json();
+            if (meData.success) myPhone = meData.user.phone;
+
+            // Get members (only admins can view)
+            const res = await fetch('/api/channel-members', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token, channelId })
+            });
+            const data = await res.json();
+            if (data.success) {
+                members = data.members;
+                isAdmin = true;
+                renderMembers();
+            } else {
+                // Not admin – show message
+                document.getElementById('membersContainer').innerHTML = `
+                    <div class="text-center p-8 text-textGray">Only admins can view members.</div>
+                `;
+            }
+        } catch(e) { showToast('Failed to load members', true); }
+
+        function renderMembers() {
+            const container = document.getElementById('membersContainer');
+            const isOwner = members.some(m => m.phone === myPhone && m.role === 'owner');
+
+            let html = `<div style="color:#7E8A95;font-size:14px;margin-bottom:12px;">${members.length} members</div>`;
+            members.forEach(m => {
+                const isSelf = m.phone === myPhone;
+                const roleTag = m.role === 'owner' ? '<span class="role" style="color:#FFD700;">OWNER</span>' : (m.role === 'admin' ? '<span class="role" style="color:#14C37A;">ADMIN</span>' : '');
+                const actions = (isAdmin && !isSelf && m.role !== 'owner') ? `
+                    <div class="actions">
+                        ${m.role !== 'admin' && isOwner ? `<button class="promote-btn" data-phone="${m.phone}"><i data-lucide="arrow-up-circle" class="w-4 h-4"></i></button>` : ''}
+                        ${m.role === 'admin' && isOwner ? `<button class="demote-btn" data-phone="${m.phone}"><i data-lucide="arrow-down-circle" class="w-4 h-4"></i></button>` : ''}
+                        <button class="remove-btn" data-phone="${m.phone}"><i data-lucide="user-minus" class="w-4 h-4"></i></button>
+                    </div>
+                ` : '';
+
+                html += `
+                    <div class="member-item" data-phone="${m.phone}">
+                        <div class="avatar">${m.displayName?.charAt(0) || '?'}</div>
+                        <div class="info">
+                            <div class="name">${m.displayName} ${isSelf ? '(You)' : ''}</div>
+                            <div class="role">${roleTag}</div>
+                        </div>
+                        ${actions}
+                    </div>
+                `;
+            });
+
+            if (isAdmin) {
+                html += `
+                    <button class="add-btn" id="addMemberBtn"><i data-lucide="user-plus" class="w-4 h-4 inline mr-2"></i> Add Member</button>
+                `;
+            }
+
+            container.innerHTML = html;
+            lucide.createIcons();
+
+            container.querySelectorAll('.promote-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const phone = this.dataset.phone;
+                    if (confirm('Promote to admin?')) {
+                        fetch('/api/promote-channel-admin', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ token, channelId, phone })
+                        }).then(res => res.json())
+                          .then(data => {
+                              if (data.success) { showToast('Promoted'); renderMembers(); }
+                              else showToast(data.error, true);
+                          });
+                    }
+                });
+            });
+
+            container.querySelectorAll('.demote-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const phone = this.dataset.phone;
+                    if (confirm('Demote this admin?')) {
+                        fetch('/api/demote-channel-admin', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ token, channelId, phone })
+                        }).then(res => res.json())
+                          .then(data => {
+                              if (data.success) { showToast('Demoted'); renderMembers(); }
+                              else showToast(data.error, true);
+                          });
+                    }
+                });
+            });
+
+            container.querySelectorAll('.remove-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const phone = this.dataset.phone;
+                    if (confirm('Remove this member?')) {
+                        fetch('/api/remove-channel-member', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ token, channelId, phone })
+                        }).then(res => res.json())
+                          .then(data => {
+                              if (data.success) { showToast('Removed'); renderMembers(); }
+                              else showToast(data.error, true);
+                          });
+                    }
+                });
+            });
+
+            document.getElementById('addMemberBtn')?.addEventListener('click', function() {
+                const phone = prompt('Enter phone number to add:');
+                if (phone && phone.trim()) {
+                    fetch('/api/add-channel-member', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token, channelId, phone: phone.trim() })
+                    }).then(res => res.json())
+                      .then(data => {
+                          if (data.success) { showToast('Member added!'); renderMembers(); }
+                          else showToast(data.error || 'Error', true);
+                      });
+                }
+            });
+        }
+    });
+</script>
+</body>
+</html>

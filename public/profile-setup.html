@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Setup</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js"></script>
+    <style>
+        .avatar-circle {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: #1F2C33;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            overflow: hidden;
+            border: 2px solid #a855f7;
+        }
+        .avatar-circle img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+<div class="glow-container" style="display:flex; justify-content:center; align-items:center; height:100vh; background:#0B141A;">
+    <div class="glow-box">
+        <h2 style="text-align:center; color:#E9EDEF;">Set up profile</h2>
+        <div class="avatar-circle" id="avatarPicker">
+            <i class="fas fa-camera" style="color:#AEBAC1; font-size:30px;"></i>
+        </div>
+        <input type="file" id="avatarFile" accept="image/*" style="display:none;" />
+        <input type="text" id="displayName" placeholder="Display name" style="width:100%; background:#1F2C33; color:#E9EDEF; padding:14px; border-radius:30px; border:none; margin-bottom:12px;" />
+        <input type="text" id="username" placeholder="Username" style="width:100%; background:#1F2C33; color:#E9EDEF; padding:14px; border-radius:30px; border:none;" />
+        <div id="profileError" style="color:#ff6b6b; text-align:center; margin:12px 0; display:none;"></div>
+        <button class="btn-primary" id="continueProfile" style="width:100%; margin-top:20px;">Continue</button>
+    </div>
+</div>
+<script>
+    let avatarData = '';
+    document.getElementById('avatarPicker').addEventListener('click', () => document.getElementById('avatarFile').click());
+    document.getElementById('avatarFile').addEventListener('change', function(e) {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                avatarData = ev.target.result;
+                document.getElementById('avatarPicker').innerHTML = `<img src="${avatarData}" />`;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    document.getElementById('continueProfile').addEventListener('click', async function() {
+        const displayName = document.getElementById('displayName').value.trim();
+        const username = document.getElementById('username').value.trim();
+        if (!displayName) {
+            document.getElementById('profileError').textContent = 'Display name required';
+            document.getElementById('profileError').style.display = 'block';
+            return;
+        }
+        const token = getToken();
+        if (!token) { goTo('login.html'); return; }
+        const res = await fetch('/api/complete-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, displayName, username: username || displayName, email: '', avatar: avatarData })
+        });
+        const data = await res.json();
+        if (data.success) goTo('email-setup.html');
+        else {
+            document.getElementById('profileError').textContent = data.error || 'Error saving profile';
+            document.getElementById('profileError').style.display = 'block';
+        }
+    });
+</script>
+</body>
+</html>

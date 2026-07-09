@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>New Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="script.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background: #0B141A; color: #E9EDEF; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .app { width: 100%; max-width: 430px; min-height: 100vh; background: #111B21; padding: 16px; }
+        .header { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid #1F2C33; }
+        .header .back { color: #AEBAC1; cursor: pointer; font-size: 28px; }
+        .header .title { font-size: 20px; font-weight: 700; flex: 1; }
+        .search-box { background: #1F2C33; border-radius: 30px; padding: 8px 16px; display: flex; align-items: center; margin: 12px 0; }
+        .search-box input { background: transparent; border: none; color: #E9EDEF; font-size: 16px; flex: 1; outline: none; }
+        .search-box input::placeholder { color: #7E8A95; }
+        .option-item { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid #1F2C33; cursor: pointer; }
+        .option-item .icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .option-item .icon.green { background: rgba(20,195,122,0.15); color: #14C37A; }
+        .option-item .icon.purple { background: rgba(99,91,255,0.15); color: #635BFF; }
+        .option-item .icon.blue { background: rgba(59,130,246,0.15); color: #3B82F6; }
+        .option-item .text .title { font-weight: 500; }
+        .option-item .text .sub { font-size: 13px; color: #7E8A95; }
+        .contact-item { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #1F2C33; cursor: pointer; }
+        .contact-item .avatar { width: 44px; height: 44px; border-radius: 50%; background: #2A3942; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; overflow: hidden; margin-right: 12px; }
+        .contact-item .info { flex: 1; }
+        .contact-item .info .name { font-weight: 500; }
+        .contact-item .info .sub { font-size: 13px; color: #7E8A95; }
+        .empty-state { text-align: center; padding: 40px 0; color: #7E8A95; }
+        .empty-state i { font-size: 48px; display: block; margin-bottom: 12px; }
+        .btn-outline { background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #E9EDEF; padding: 8px 20px; border-radius: 30px; font-weight: 500; cursor: pointer; }
+        .btn-outline:hover { background: rgba(255,255,255,0.05); }
+        .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: #14C37A; color: #111B21; padding: 8px 20px; border-radius: 8px; font-weight: 600; z-index: 999; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .toast.error { background: #E74C3C; color: #fff; }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="header">
+        <span class="back" id="backBtn"><i data-lucide="arrow-left" class="w-6 h-6"></i></span>
+        <div class="title">New Chat</div>
+    </div>
+    <div class="search-box">
+        <i data-lucide="search" class="w-5 h-5 text-textGray"></i>
+        <input type="text" id="searchInput" placeholder="Search contacts..." />
+    </div>
+
+    <!-- Options -->
+    <div class="option-item" id="newGroupBtn">
+        <div class="icon green"><i data-lucide="users" class="w-5 h-5"></i></div>
+        <div class="text"><div class="title">New Group</div><div class="sub">Create a group with friends</div></div>
+    </div>
+    <div class="option-item" id="findUsersBtn">
+        <div class="icon purple"><i data-lucide="user-search" class="w-5 h-5"></i></div>
+        <div class="text"><div class="title">Find Users</div><div class="sub">Search by @username, name or phone</div></div>
+    </div>
+    <div class="option-item" id="inviteFriendsBtn">
+        <div class="icon blue"><i data-lucide="share-2" class="w-5 h-5"></i></div>
+        <div class="text"><div class="title">Invite Friends</div><div class="sub">Share NEXora CHQT invite link</div></div>
+    </div>
+
+    <!-- Contacts list -->
+    <div id="contactList"></div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+    lucide.createIcons();
+
+    const toast = document.getElementById('toast');
+    function showToast(text, isError = false) {
+        toast.textContent = text;
+        toast.className = 'toast' + (isError ? ' error' : '');
+        toast.style.display = 'block';
+        clearTimeout(toast._timeout);
+        toast._timeout = setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+
+    document.getElementById('backBtn').addEventListener('click', () => goTo('dashboard.html'));
+    document.getElementById('newGroupBtn').addEventListener('click', () => goTo('new-group.html'));
+    document.getElementById('findUsersBtn').addEventListener('click', () => goTo('find-users.html'));
+    document.getElementById('inviteFriendsBtn').addEventListener('click', function() {
+        const link = 'https://nexora.app/invite/abc123';
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(link).then(() => showToast('Invite link copied!')).catch(() => showToast('Link: ' + link));
+        } else {
+            showToast('Link: ' + link);
+        }
+    });
+
+    // Render contacts
+    function renderContacts() {
+        const container = document.getElementById('contactList');
+        const contacts = JSON.parse(localStorage.getItem('contacts') || '[]');
+        if (contacts.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <i data-lucide="users"></i>
+                    <p>No contacts yet</p>
+                    <div style="display:flex; gap:12px; justify-content:center; margin-top:16px;">
+                        <button class="btn-outline" id="addByPhoneBtn">Add by Phone</button>
+                        <button class="btn-outline" id="findUsersBtn2">Find Users</button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('addByPhoneBtn')?.addEventListener('click', () => goTo('add-contact.html'));
+            document.getElementById('findUsersBtn2')?.addEventListener('click', () => goTo('find-users.html'));
+            return;
+        }
+        let html = '';
+        contacts.forEach(c => {
+            html += `
+                <div class="contact-item" data-phone="${c.phone || ''}" data-name="${c.name}">
+                    <div class="avatar">${c.name.charAt(0).toUpperCase()}</div>
+                    <div class="info"><div class="name">${c.name}</div><div class="sub">${c.lastMsg || 'Tap to chat'}</div></div>
+                </div>
+            `;
+        });
+        container.innerHTML = html;
+        container.querySelectorAll('.contact-item').forEach(el => {
+            el.addEventListener('click', function() {
+                const phone = this.dataset.phone;
+                const name = this.dataset.name;
+                goTo(`chat.html?phone=${phone}&name=${encodeURIComponent(name)}`);
+            });
+        });
+    }
+
+    renderContacts();
+
+    // Search filter
+    document.getElementById('searchInput').addEventListener('input', function() {
+        const query = this.value.toLowerCase().trim();
+        const items = document.querySelectorAll('.contact-item');
+        items.forEach(item => {
+            const name = item.dataset.name?.toLowerCase() || '';
+            item.style.display = name.includes(query) ? 'flex' : 'none';
+        });
+    });
+</script>
+</body>
+</html>

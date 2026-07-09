@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Group Info</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="script.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background: #0B141A; color: #E9EDEF; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .app { width: 100%; max-width: 430px; height: 100vh; max-height: 850px; background: #111B21; border-radius: 28px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 0 60px rgba(20,195,122,0.08); position: relative; }
+        .header { padding: 16px 20px; display: flex; align-items: center; gap: 12px; background: #111B21; border-bottom: 1px solid #1F2C33; }
+        .header .back { color: #AEBAC1; cursor: pointer; font-size: 24px; }
+        .header .title { font-size: 20px; font-weight: 700; flex: 1; }
+        .header .edit-btn { color: #14C37A; font-weight: 600; cursor: pointer; }
+        .content { flex: 1; overflow-y: auto; padding: 0 16px 16px; }
+        .group-header { text-align: center; padding: 16px 0; }
+        .group-header .avatar { width: 80px; height: 80px; border-radius: 50%; background: #2A3942; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; font-size: 32px; overflow: hidden; }
+        .group-header .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .group-header .name { font-size: 22px; font-weight: 700; }
+        .group-header .sub { font-size: 14px; color: #7E8A95; }
+        .stat-row { display: flex; justify-content: space-around; padding: 12px 0; border-bottom: 1px solid #1F2C33; }
+        .stat-row .stat { text-align: center; }
+        .stat-row .stat .num { font-size: 18px; font-weight: 600; }
+        .stat-row .stat .label { font-size: 12px; color: #7E8A95; }
+        .tab-bar { display: flex; gap: 20px; border-bottom: 1px solid #1F2C33; margin-bottom: 8px; }
+        .tab { padding: 8px 0; font-size: 14px; font-weight: 500; color: #7E8A95; cursor: pointer; border-bottom: 2px solid transparent; }
+        .tab.active { color: #14C37A; border-bottom-color: #14C37A; }
+        .member-item { display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid #1F2C33; }
+        .member-item .avatar { width: 36px; height: 36px; border-radius: 50%; background: #2A3942; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; overflow: hidden; margin-right: 12px; }
+        .member-item .info { flex: 1; }
+        .member-item .info .name { font-size: 15px; font-weight: 500; }
+        .member-item .info .role { font-size: 12px; color: #7E8A95; }
+        .settings-item { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #1F2C33; cursor: pointer; }
+        .settings-item .icon { margin-right: 14px; color: #7E8A95; }
+        .settings-item .left { flex: 1; }
+        .settings-item .left .title { font-size: 16px; font-weight: 500; }
+        .settings-item .left .desc { font-size: 13px; color: #7E8A95; }
+        .settings-item .right { color: #7E8A95; }
+        .action-btn { width: 100%; padding: 12px; background: #1F2C33; border: none; border-radius: 12px; color: #E9EDEF; font-weight: 600; cursor: pointer; margin-top: 8px; text-align: center; }
+        .action-btn.danger { color: #E74C3C; }
+        .action-btn:hover { background: #2A3942; }
+        .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: #14C37A; color: #111B21; padding: 8px 20px; border-radius: 8px; font-weight: 600; z-index: 999; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .toast.error { background: #E74C3C; color: #fff; }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="header">
+        <span class="back" id="backBtn"><i data-lucide="arrow-left" class="w-5 h-5"></i></span>
+        <div class="title" id="groupTitle">Group</div>
+        <div class="edit-btn" id="editBtn">Edit</div>
+    </div>
+    <div class="content" id="groupContent">
+        <!-- dynamic -->
+    </div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+    lucide.createIcons();
+
+    const toast = document.getElementById('toast');
+    function showToast(text, isError = false) {
+        toast.textContent = text;
+        toast.className = 'toast' + (isError ? ' error' : '');
+        toast.style.display = 'block';
+        clearTimeout(toast._timeout);
+        toast._timeout = setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        const ok = await checkAuth(true);
+        if (!ok) return;
+
+        document.getElementById('backBtn').addEventListener('click', () => goTo('communities.html'));
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const groupId = urlParams.get('id');
+        if (!groupId) { showToast('No group specified', true); return; }
+
+        const token = getToken();
+        let group = null;
+        let myPhone = null;
+        let isAdmin = false;
+        let isOwner = false;
+
+        try {
+            const res = await fetch(`/api/group/${groupId}`);
+            const data = await res.json();
+            if (!data.success) { showToast('Group not found', true); return; }
+            group = data.group;
+
+            const meRes = await fetch('/api/me', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) });
+            const meData = await meRes.json();
+            if (meData.success) {
+                myPhone = meData.user.phone;
+                isAdmin = group.admin === myPhone || group.owner === myPhone;
+                isOwner = group.owner === myPhone;
+            }
+
+            renderGroup();
+        } catch(e) { showToast('Failed to load group', true); }
+
+        function renderGroup() {
+            const container = document.getElementById('groupContent');
+            document.getElementById('groupTitle').textContent = group.name;
+
+            const avatarContent = group.avatar ? `<img src="${group.avatar}" />` : '👥';
+            const memberCount = group.members?.length || 0;
+            const admins = group.members?.filter(m => m.role === 'admin' || m.role === 'owner') || [];
+            const owner = group.members?.find(m => m.role === 'owner');
+
+            let html = `
+                <div class="group-header">
+                    <div class="avatar">${avatarContent}</div>
+                    <div class="name">${group.name}</div>
+                    <div class="sub">${memberCount} members</div>
+                </div>
+
+                <div class="stat-row">
+                    <div class="stat"><div class="num">${memberCount}</div><div class="label">Members</div></div>
+                    <div class="stat"><div class="num">${admins.length}</div><div class="label">Admins</div></div>
+                    <div class="stat"><div class="num">${owner ? '👑' : ''}</div><div class="label">Owner</div></div>
+                </div>
+
+                <div class="settings-item" id="copyLink">
+                    <div class="icon"><i data-lucide="link" class="w-5 h-5"></i></div>
+                    <div class="left"><div class="title">Invite Link</div><div class="desc">${group.link || 'No link'}</div></div>
+                    <div class="right"><i data-lucide="copy" class="w-4 h-4"></i></div>
+                </div>
+
+                <div class="settings-item" onclick="goTo('group-members.html?id=${groupId}')">
+                    <div class="icon"><i data-lucide="users" class="w-5 h-5"></i></div>
+                    <div class="left"><div class="title">Members</div><div class="desc">${memberCount} members</div></div>
+                    <div class="right"><i data-lucide="chevron-right" class="w-4 h-4"></i></div>
+                </div>
+            `;
+
+            if (isAdmin) {
+                html += `
+                    <div class="settings-item" onclick="goTo('group-edit.html?id=${groupId}')">
+                        <div class="icon"><i data-lucide="edit-2" class="w-5 h-5"></i></div>
+                        <div class="left"><div class="title">Edit Group</div><div class="desc">Name, photo, description</div></div>
+                        <div class="right"><i data-lucide="chevron-right" class="w-4 h-4"></i></div>
+                    </div>
+                    <div class="settings-item" onclick="goTo('group-permissions.html?id=${groupId}')">
+                        <div class="icon"><i data-lucide="shield" class="w-5 h-5"></i></div>
+                        <div class="left"><div class="title">Permissions</div><div class="desc">Manage group permissions</div></div>
+                        <div class="right"><i data-lucide="chevron-right" class="w-4 h-4"></i></div>
+                    </div>
+                `;
+            }
+
+            html += `
+                <button class="action-btn danger" id="exitBtn">${isOwner ? 'Delete and Leave Group' : 'Leave Group'}</button>
+            `;
+
+            container.innerHTML = html;
+            lucide.createIcons();
+
+            // Copy link
+            document.getElementById('copyLink').addEventListener('click', function() {
+                const link = this.querySelector('.desc')?.textContent || '';
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(link).then(() => showToast('Link copied!')).catch(() => showToast('Link: ' + link));
+                } else {
+                    showToast('Link: ' + link);
+                }
+            });
+
+            document.getElementById('exitBtn')?.addEventListener('click', function() {
+                const confirmMsg = isOwner ? 'Delete and leave this group? This cannot be undone.' : 'Leave this group?';
+                if (confirm(confirmMsg)) {
+                    fetch('/api/exit-group', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token, groupId })
+                    }).then(res => res.json())
+                      .then(data => {
+                          if (data.success) {
+                              showToast(isOwner ? 'Group deleted' : 'You left the group');
+                              setTimeout(() => goTo('communities.html'), 1500);
+                          } else {
+                              showToast(data.error || 'Failed', true);
+                          }
+                      });
+                }
+            });
+
+            document.getElementById('editBtn').addEventListener('click', function() {
+                if (isAdmin) {
+                    goTo(`group-edit.html?id=${groupId}`);
+                } else {
+                    showToast('Only admins can edit', true);
+                }
+            });
+        }
+    });
+</script>
+</body>
+</html>

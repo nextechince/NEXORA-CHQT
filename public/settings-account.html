@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Account</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0" rel="stylesheet">
+    <script src="script.js"></script>
+    <style>
+        :root {
+            --bg-color: #12181b;
+            --surface-color: #1a2226;
+            --text-primary: #ffffff;
+            --text-secondary: #90a4ae;
+            --divider-color: #263238;
+            --accent-color: #00cc76;
+            --danger-color: #ef5350;
+        }
+        .light-mode {
+            --bg-color: #f5f7f8;
+            --surface-color: #ffffff;
+            --text-primary: #1c252c;
+            --text-secondary: #607d8b;
+            --divider-color: #cfd8dc;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-primary); display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; transition: background-color 0.3s; }
+        .phone-container { width: 100%; max-width: 450px; background-color: var(--bg-color); min-height: 100vh; display: flex; flex-direction: column; position: relative; padding-bottom: 20px; }
+        header { padding: 16px 20px; display: flex; align-items: center; gap: 12px; }
+        header .back-btn { color: var(--text-secondary); cursor: pointer; font-size: 28px; }
+        header h1 { font-size: 24px; font-weight: 700; flex: 1; }
+        .profile-card { display: flex; align-items: center; padding: 16px 20px; gap: 16px; }
+        .avatar-container { position: relative; width: 72px; height: 72px; }
+        .avatar { width: 100%; height: 100%; background: #173024; border-radius: 50%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .avatar span { font-size: 40px; }
+        .camera-badge { position: absolute; bottom: 0; right: 0; background: var(--accent-color); width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #111619; cursor: pointer; border: 2px solid var(--bg-color); }
+        .settings-item { display: flex; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--divider-color); cursor: pointer; }
+        .settings-item .left { flex: 1; display: flex; flex-direction: column; }
+        .settings-item .left .title { font-size: 16px; font-weight: 500; }
+        .settings-item .left .sub { font-size: 13px; color: var(--text-secondary); }
+        .settings-item .right { display: flex; align-items: center; gap: 8px; }
+        .settings-item .right input[type="text"], .settings-item .right input[type="email"] { background: var(--surface-color); color: var(--text-primary); border: 1px solid var(--divider-color); border-radius: 8px; padding: 6px 12px; font-size: 14px; outline: none; flex: 1; }
+        .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: var(--accent-color); color: #111619; padding: 10px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; z-index: 999; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .toast.error { background: var(--danger-color); color: #fff; }
+    </style>
+</head>
+<body>
+<div class="phone-container">
+    <header>
+        <span class="back-btn material-symbols-outlined" id="backBtn">arrow_back</span>
+        <h1>Account</h1>
+    </header>
+
+    <div class="profile-card">
+        <div class="avatar-container">
+            <div class="avatar" id="userAvatar"><span class="material-symbols-outlined">person</span></div>
+            <div class="camera-badge" id="cameraBadge"><span class="material-symbols-outlined" style="font-size:16px;">photo_camera</span></div>
+            <input type="file" id="avatarFile" accept="image/*" style="display:none;" />
+        </div>
+        <div><div id="userNameDisplay" style="font-size:18px;font-weight:600;">User</div><div style="font-size:14px;color:var(--text-secondary);" id="userPhoneDisplay">+123456789</div></div>
+    </div>
+
+    <div class="settings-item">
+        <div class="left"><div class="title">Display Name</div></div>
+        <div class="right"><input type="text" id="displayName" value="User" /></div>
+    </div>
+    <div class="settings-item">
+        <div class="left"><div class="title">Username</div></div>
+        <div class="right"><input type="text" id="username" value="user" /></div>
+    </div>
+    <div class="settings-item">
+        <div class="left"><div class="title">Email</div></div>
+        <div class="right"><input type="email" id="email" placeholder="Email" /></div>
+    </div>
+    <div class="settings-item" style="cursor:default;border-bottom:none;">
+        <div class="left"><div class="title">Phone</div></div>
+        <div class="right"><span style="color:var(--text-secondary);" id="phoneNumber">+123456789</span></div>
+    </div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+    const toast = document.getElementById('toast');
+    function showToast(text, isError = false) {
+        toast.textContent = text;
+        toast.className = 'toast' + (isError ? ' error' : '');
+        toast.style.display = 'block';
+        clearTimeout(toast._timeout);
+        toast._timeout = setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        const ok = await checkAuth(true);
+        if (!ok) return;
+        document.getElementById('backBtn').addEventListener('click', () => goTo('settings.html'));
+
+        const token = getToken();
+        let user = null;
+        try {
+            const res = await fetch('/api/me', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) });
+            const data = await res.json();
+            if (data.success) user = data.user;
+        } catch(e) { showToast('Failed to load user', true); }
+
+        if (user) {
+            document.getElementById('displayName').value = user.displayName || '';
+            document.getElementById('username').value = user.username || '';
+            document.getElementById('email').value = user.email || '';
+            document.getElementById('phoneNumber').textContent = user.phone || '';
+            document.getElementById('userNameDisplay').textContent = user.displayName || 'User';
+            document.getElementById('userPhoneDisplay').textContent = user.phone || '';
+            if (user.avatar) {
+                document.getElementById('userAvatar').innerHTML = `<img src="${user.avatar}" />`;
+            }
+            if (user.settings && user.settings.darkMode === false) {
+                document.body.classList.add('light-mode');
+            }
+        }
+
+        async function saveAccount() {
+            const updates = {
+                displayName: document.getElementById('displayName').value.trim(),
+                username: document.getElementById('username').value.trim(),
+                email: document.getElementById('email').value.trim()
+            };
+            try {
+                const res = await fetch('/api/update-profile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, updates }) });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Account updated');
+                    document.getElementById('userNameDisplay').textContent = updates.displayName;
+                } else showToast('Failed to save', true);
+            } catch(e) { showToast('Network error', true); }
+        }
+
+        document.getElementById('displayName').addEventListener('change', saveAccount);
+        document.getElementById('username').addEventListener('change', saveAccount);
+        document.getElementById('email').addEventListener('change', saveAccount);
+
+        document.getElementById('cameraBadge').addEventListener('click', () => document.getElementById('avatarFile').click());
+        document.getElementById('avatarFile').addEventListener('change', function(e) {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = async function(ev) {
+                    const avatar = ev.target.result;
+                    try {
+                        const res = await fetch('/api/update-profile', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, updates: { avatar } }) });
+                        const data = await res.json();
+                        if (data.success) {
+                            document.getElementById('userAvatar').innerHTML = `<img src="${avatar}" />`;
+                            showToast('Avatar updated');
+                        } else showToast('Failed to save', true);
+                    } catch(e) { showToast('Network error', true); }
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    });
+</script>
+</body>
+</html>

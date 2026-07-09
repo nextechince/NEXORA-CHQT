@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Chat Wallpaper</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0" rel="stylesheet">
+    <script src="script.js"></script>
+    <style>
+        :root {
+            --bg-color: #12181b;
+            --surface-color: #1a2226;
+            --text-primary: #ffffff;
+            --text-secondary: #90a4ae;
+            --divider-color: #263238;
+            --accent-color: #00cc76;
+            --danger-color: #ef5350;
+        }
+        .light-mode {
+            --bg-color: #f5f7f8;
+            --surface-color: #ffffff;
+            --text-primary: #1c252c;
+            --text-secondary: #607d8b;
+            --divider-color: #cfd8dc;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-primary); display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; transition: background-color 0.3s; }
+        .phone-container { width: 100%; max-width: 450px; background-color: var(--bg-color); min-height: 100vh; display: flex; flex-direction: column; position: relative; padding-bottom: 20px; }
+        header { padding: 16px 20px; display: flex; align-items: center; gap: 12px; }
+        header .back-btn { color: var(--text-secondary); cursor: pointer; font-size: 28px; }
+        header h1 { font-size: 24px; font-weight: 700; flex: 1; }
+        .preview-box { background: #2a3a40; margin: 16px 20px; border-radius: 16px; padding: 20px; text-align: center; min-height: 120px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .preview-box .msg { background: var(--bg-color); padding: 8px 16px; border-radius: 12px; margin: 4px; display: inline-block; }
+        .preview-box .msg.mine { background: var(--accent-color); color: #111619; align-self: flex-end; }
+        .preview-box .msg.other { background: var(--surface-color); align-self: flex-start; }
+        .settings-item { display: flex; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--divider-color); }
+        .settings-item .left { flex:1; }
+        .settings-item .left .title { font-size: 16px; font-weight: 500; }
+        .settings-item .left .sub { font-size: 13px; color: var(--text-secondary); }
+        .settings-item .right { display: flex; align-items: center; gap: 8px; }
+        .settings-item input[type="range"] { width: 100px; background: transparent; }
+        .color-swatch { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--divider-color); cursor: pointer; }
+        .preset-grid { display: flex; flex-wrap: wrap; gap: 12px; padding: 8px 20px 20px; }
+        .preset-item { width: 70px; height: 70px; border-radius: 12px; cursor: pointer; border: 2px solid var(--divider-color); display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--text-primary); }
+        .preset-item.active { border-color: var(--accent-color); }
+        .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: var(--accent-color); color: #111619; padding: 10px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; z-index: 999; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .toast.error { background: var(--danger-color); color: #fff; }
+    </style>
+</head>
+<body>
+<div class="phone-container">
+    <header>
+        <span class="back-btn material-symbols-outlined" id="backBtn">arrow_back</span>
+        <h1>Chat Wallpaper</h1>
+    </header>
+
+    <div class="preview-box" id="previewBox">
+        <div class="msg other">Hey! How are you? 😊</div>
+        <div class="msg mine">EMMZYAPP is amazing 👍</div>
+    </div>
+
+    <div class="settings-item">
+        <div class="left"><div class="title">Blur</div><div class="sub">0px</div></div>
+        <div class="right"><input type="range" min="0" max="20" value="0" id="blurRange" /></div>
+    </div>
+    <div class="settings-item">
+        <div class="left"><div class="title">Dim</div><div class="sub">0%</div></div>
+        <div class="right"><input type="range" min="0" max="100" value="0" id="dimRange" /></div>
+    </div>
+
+    <div class="settings-item" onclick="document.getElementById('fileInput').click()">
+        <div class="left"><div class="title">Upload from gallery</div><div class="sub">JPG, PNG, WEBP supported</div></div>
+        <div class="right"><span class="material-symbols-outlined" style="color:var(--accent-color);">upload</span></div>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" style="display:none;" />
+
+    <div class="section-header" style="padding:12px 20px 4px; font-size:13px; font-weight:600; color:var(--text-secondary); text-transform:uppercase;">PRESET WALLPAPERS</div>
+    <div class="preset-grid">
+        <div class="preset-item" style="background:#2a3a40;" data-wall="default">Default</div>
+        <div class="preset-item" style="background:linear-gradient(135deg,#1a4a2a,#2a7a4a);" data-wall="forest">Forest</div>
+        <div class="preset-item" style="background:linear-gradient(135deg,#0a2a4a,#1a5a8a);" data-wall="ocean">Ocean</div>
+        <div class="preset-item" style="background:linear-gradient(135deg,#1a0a3a,#3a1a6a);" data-wall="galaxy">Galaxy</div>
+        <div class="preset-item" style="background:linear-gradient(135deg,#4a1a0a,#8a3a1a);" data-wall="sunset">Sunset</div>
+        <div class="preset-item" style="background:linear-gradient(135deg,#0a1a2a,#0a3a4a);" data-wall="midnight">Midnight</div>
+    </div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>
+    const toast = document.getElementById('toast');
+    function showToast(text, isError = false) {
+        toast.textContent = text;
+        toast.className = 'toast' + (isError ? ' error' : '');
+        toast.style.display = 'block';
+        clearTimeout(toast._timeout);
+        toast._timeout = setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        const ok = await checkAuth(true);
+        if (!ok) return;
+        document.getElementById('backBtn').addEventListener('click', () => goTo('settings.html'));
+
+        const token = getToken();
+        let user = null;
+        try {
+            const res = await fetch('/api/me', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) });
+            const data = await res.json();
+            if (data.success) user = data.user;
+        } catch(e) { showToast('Failed to load settings', true); }
+
+        if (user && user.settings && user.settings.darkMode === false) {
+            document.body.classList.add('light-mode');
+        }
+
+        // Load saved wallpaper
+        if (user && user.settings && user.settings.wallpaper) {
+            const wall = user.settings.wallpaper;
+            // apply to preview background
+            document.getElementById('previewBox').style.background = wall;
+        }
+
+        document.querySelectorAll('.preset-item').forEach(el => {
+            el.addEventListener('click', async function() {
+                const wall = this.dataset.wall;
+                const bg = this.style.background;
+                document.getElementById('previewBox').style.background = bg;
+                // Save to server
+                try {
+                    const res = await fetch('/api/update-profile', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token, updates: { settings: { wallpaper: bg } } })
+                    });
+                    const data = await res.json();
+                    if (data.success) showToast('Wallpaper updated');
+                    else showToast('Failed to save', true);
+                } catch(e) { showToast('Network error', true); }
+            });
+        });
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    const bg = `url(${ev.target.result}) no-repeat center/cover`;
+                    document.getElementById('previewBox').style.background = bg;
+                    // Save
+                    fetch('/api/update-profile', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token, updates: { settings: { wallpaper: bg } } })
+                    }).then(res => res.json()).then(data => {
+                        if (data.success) showToast('Wallpaper updated');
+                        else showToast('Failed to save', true);
+                    }).catch(() => showToast('Network error', true));
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Search</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="script.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background: #0B141A; color: #E9EDEF; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .app { width: 100%; max-width: 430px; height: 100vh; max-height: 850px; background: #111B21; border-radius: 28px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 0 60px rgba(20,195,122,0.08); position: relative; }
+
+        .header { padding: 16px 20px 8px 20px; display: flex; align-items: center; gap: 12px; background: #111B21; border-bottom: 1px solid #1F2C33; }
+        .header .back { color: #7E8A95; cursor: pointer; font-size: 24px; }
+        .header .search-input { flex: 1; background: #1F2C33; border: none; border-radius: 30px; padding: 10px 16px; color: #E9EDEF; font-size: 16px; outline: none; }
+        .header .search-input::placeholder { color: #7E8A95; }
+        .header .clear-btn { color: #7E8A95; cursor: pointer; display: none; }
+
+        .content { flex: 1; overflow-y: auto; padding: 8px 16px 0; }
+        .result-section { margin: 8px 0; }
+        .result-section .section-title { font-size: 13px; font-weight: 600; color: #7E8A95; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .result-item { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid #1F2C33; cursor: pointer; }
+        .result-item .avatar { width: 40px; height: 40px; border-radius: 50%; background: #2A3942; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; overflow: hidden; flex-shrink: 0; margin-right: 12px; }
+        .result-item .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .result-item .info { flex: 1; }
+        .result-item .info .name { font-weight: 500; font-size: 15px; }
+        .result-item .info .sub { font-size: 13px; color: #7E8A95; }
+        .result-item .info .highlight { background: rgba(20,195,122,0.2); color: #14C37A; padding: 0 4px; border-radius: 2px; }
+
+        .empty-state { text-align: center; padding: 40px 0; color: #7E8A95; }
+        .empty-state i { font-size: 48px; color: #1F2C33; display: block; margin-bottom: 12px; }
+    </style>
+</head>
+<body>
+
+<div class="app">
+    <div class="header">
+        <span class="back" id="backBtn"><i data-lucide="arrow-left" class="w-5 h-5"></i></span>
+        <input class="search-input" id="searchInput" placeholder="Search chats, messages, contacts..." autofocus />
+        <span class="clear-btn" id="clearBtn"><i data-lucide="x" class="w-5 h-5"></i></span>
+    </div>
+
+    <div class="content" id="searchResults">
+        <div class="empty-state">
+            <i data-lucide="search"></i>
+            <p>Search for contacts, groups, or messages</p>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast" style="position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#14C37A;color:#111B21;padding:8px 20px;border-radius:8px;font-weight:600;z-index:999;display:none;"></div>
+
+<script>
+    lucide.createIcons();
+    const toast = document.getElementById('toast');
+    function showToast(text, isError = false) {
+        toast.textContent = text;
+        toast.className = 'toast' + (isError ? ' error' : '');
+        toast.style.display = 'block';
+        clearTimeout(toast._timeout);
+        toast._timeout = setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        const ok = await checkAuth(true);
+        if (!ok) return;
+
+        document.getElementById('backBtn').addEventListener('click', () => goTo('dashboard.html'));
+
+        const searchInput = document.getElementById('searchInput');
+        const clearBtn = document.getElementById('clearBtn');
+        const resultsContainer = document.getElementById('searchResults');
+
+        searchInput.addEventListener('input', function() {
+            const query = this.value.trim();
+            clearBtn.style.display = query ? 'block' : 'none';
+            if (query.length >= 2) performSearch(query);
+            else {
+                resultsContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i data-lucide="search"></i>
+                        <p>Search for contacts, groups, or messages</p>
+                    </div>
+                `;
+                lucide.createIcons();
+            }
+        });
+
+        clearBtn.addEventListener('click', function() {
+            searchInput.value = '';
+            searchInput.focus();
+            this.style.display = 'none';
+            resultsContainer.innerHTML = `
+                <div class="empty-state">
+                    <i data-lucide="search"></i>
+                    <p>Search for contacts, groups, or messages</p>
+                </div>
+            `;
+            lucide.createIcons();
+        });
+
+        async function performSearch(query) {
+            const token = getToken();
+            let results = { contacts: [], groups: [], channels: [], messages: [] };
+
+            // Search contacts from localStorage
+            const contacts = JSON.parse(localStorage.getItem('contacts') || '[]');
+            results.contacts = contacts.filter(c => c.name.toLowerCase().includes(query.toLowerCase()));
+
+            // Search groups from server
+            try {
+                const res = await fetch('/api/my-groups', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    results.groups = data.groups.filter(g => g.name.toLowerCase().includes(query.toLowerCase()));
+                }
+            } catch(e) {}
+
+            // Search channels from server
+            try {
+                const res = await fetch('/api/my-channels', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    results.channels = data.channels.filter(c => c.name.toLowerCase().includes(query.toLowerCase()));
+                }
+            } catch(e) {}
+
+            // Search messages (for now, simulate)
+            // In a real app, you'd have a search endpoint on the server.
+
+            renderResults(results, query);
+        }
+
+        function renderResults(results, query) {
+            let html = '';
+
+            if (results.contacts.length > 0) {
+                html += `<div class="result-section"><div class="section-title">Contacts</div>`;
+                results.contacts.forEach(c => {
+                    const highlighted = c.name.replace(new RegExp(query, 'gi'), match => `<span class="highlight">${match}</span>`);
+                    html += `
+                        <div class="result-item" onclick="goTo('chat.html?phone=${c.phone || ''}&name=${encodeURIComponent(c.name)}')">
+                            <div class="avatar">${c.name.charAt(0).toUpperCase()}</div>
+                            <div class="info"><div class="name">${highlighted}</div><div class="sub">Contact</div></div>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+            }
+
+            if (results.groups.length > 0) {
+                html += `<div class="result-section"><div class="section-title">Groups</div>`;
+                results.groups.forEach(g => {
+                    const highlighted = g.name.replace(new RegExp(query, 'gi'), match => `<span class="highlight">${match}</span>`);
+                    html += `
+                        <div class="result-item" onclick="goTo('group-chat.html?id=${g.id}')">
+                            <div class="avatar">👥</div>
+                            <div class="info"><div class="name">${highlighted}</div><div class="sub">${g.members?.length || 0} members</div></div>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+            }
+
+            if (results.channels.length > 0) {
+                html += `<div class="result-section"><div class="section-title">Channels</div>`;
+                results.channels.forEach(c => {
+                    const highlighted = c.name.replace(new RegExp(query, 'gi'), match => `<span class="highlight">${match}</span>`);
+                    html += `
+                        <div class="result-item" onclick="goTo('channel-chat.html?id=${c.id}')">
+                            <div class="avatar">📢</div>
+                            <div class="info"><div class="name">${highlighted}</div><div class="sub">${c.memberCount || 0} subscribers</div></div>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+            }
+
+            if (!html) {
+                html = `
+                    <div class="empty-state">
+                        <i data-lucide="search"></i>
+                        <p>No results found for "${query}"</p>
+                    </div>
+                `;
+            }
+
+            resultsContainer.innerHTML = html;
+            lucide.createIcons();
+        }
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NEXORA CHQT - Status</title>
+    <script src="script.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: #0b0f12; color: #ffffff; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .phone-container { width: 100%; max-width: 420px; height: 900px; background-color: #111619; position: relative; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: #13b879; color: #111619; padding: 10px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; z-index: 999; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .toast.error { background: #E74C3C; color: #fff; }
+
+        .header { padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; background-color: #111619; }
+        .logo-section { display: flex; align-items: center; gap: 10px; }
+        .logo-icon { width: 32px; height: 32px; background-color: #13b879; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; color: #111619; }
+        .logo-text { font-size: 24px; font-weight: 800; letter-spacing: 0.5px; }
+        .logo-text span { color: #13b879; font-weight: 400; }
+        .header-actions { display: flex; align-items: center; gap: 20px; color: #9cb1c2; }
+        .header-actions svg { width: 22px; height: 22px; cursor: pointer; fill: currentColor; }
+
+        .content { flex: 1; padding: 10px 16px; overflow-y: auto; }
+
+        .my-status-card { background-color: #1b202e; border-radius: 20px; padding: 14px 18px; display: flex; align-items: center; gap: 16px; cursor: pointer; margin-bottom: 12px; }
+        .my-status-card:hover { opacity: 0.85; }
+        .my-status-avatar { width: 56px; height: 56px; border-radius: 50%; background: #13b879; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: #111619; border: 2px solid #13b879; overflow: hidden; }
+        .my-status-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .my-status-info h3 { font-size: 16px; font-weight: 600; color: #ffffff; }
+        .my-status-info p { font-size: 13px; color: #798694; }
+
+        .status-item { display: flex; align-items: center; gap: 14px; padding: 10px 0; border-bottom: 1px solid #1c2327; cursor: pointer; }
+        .status-item:hover { background: rgba(255,255,255,0.02); }
+        .status-item .avatar { width: 50px; height: 50px; border-radius: 50%; background: #1c2327; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; flex-shrink: 0; overflow: hidden; border: 2px solid #13b879; }
+        .status-item .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .status-item .info { flex: 1; }
+        .status-item .info .name { font-weight: 500; font-size: 15px; }
+        .status-item .info .time { font-size: 12px; color: #798694; }
+        .status-item .info .meta { font-size: 12px; color: #798694; }
+        .status-item .info .meta .views { margin-right: 8px; }
+        .status-item .info .meta .likes { color: #E74C3C; }
+
+        .empty-state { text-align: center; padding: 40px 0; color: #798694; }
+        .empty-state svg { width: 64px; height: 64px; fill: #1c2327; display: block; margin: 0 auto 12px; }
+
+        .fab { position: absolute; bottom: 110px; right: 20px; width: 60px; height: 60px; background-color: #13b879; border-radius: 18px; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 15px rgba(19, 184, 121, 0.3); cursor: pointer; z-index: 10; }
+        .fab:hover { transform: scale(1.05); }
+        .fab svg { width: 24px; height: 24px; fill: #ffffff; }
+
+        .bottom-nav { background-color: #111619; border-top: 1px solid #1c2327; padding: 10px 10px 32px 10px; display: flex; justify-content: space-around; align-items: center; position: relative; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 6px; color: #798694; text-decoration: none; font-size: 12px; font-weight: 500; cursor: pointer; width: 20%; }
+        .nav-item svg { width: 24px; height: 24px; fill: currentColor; }
+        .nav-item.active { color: #13b879; }
+        .nav-item.active .icon-wrapper { border-top: 2px solid #13b879; padding-top: 2px; width: 100%; display: flex; justify-content: center; }
+        .slide-bar-container { position: absolute; bottom: 8px; left: 0; right: 0; display: flex; justify-content: center; pointer-events: none; }
+        .slide-bar { width: 135px; height: 5px; background-color: #ffffff; border-radius: 10px; }
+
+        /* Viewer overlay */
+        .viewer-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #000; z-index: 1000; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        .viewer-overlay.active { display: flex; }
+        .viewer-overlay .close-viewer { position: absolute; top: 20px; left: 20px; color: #fff; font-size: 28px; cursor: pointer; z-index: 10; background: none; border: none; }
+        .viewer-overlay .status-content { max-width: 90%; max-height: 70%; text-align: center; font-size: 24px; padding: 30px; background: rgba(255,255,255,0.05); border-radius: 16px; }
+        .viewer-overlay .status-content img, .viewer-overlay .status-content video { max-width: 100%; max-height: 60vh; border-radius: 12px; }
+        .viewer-overlay .viewer-info { position: absolute; bottom: 100px; left: 0; right: 0; text-align: center; padding: 0 20px; }
+        .viewer-overlay .viewer-info .name { font-size: 18px; font-weight: 600; }
+        .viewer-overlay .viewer-info .time { font-size: 14px; color: #798694; }
+        .viewer-overlay .viewer-actions { display: flex; gap: 24px; justify-content: center; margin-top: 12px; }
+        .viewer-overlay .viewer-actions button { background: rgba(255,255,255,0.1); border: none; color: #fff; padding: 8px 20px; border-radius: 30px; font-size: 16px; cursor: pointer; display: flex; align-items: center; gap: 8px; }
+        .viewer-overlay .viewer-actions button.liked { background: #E74C3C; }
+        .viewer-overlay .viewer-actions button .icon { font-size: 20px; }
+        .viewer-overlay .viewer-replies { position: absolute; bottom: 50px; left: 0; right: 0; max-height: 30%; overflow-y: auto; padding: 0 20px; color: #fff; }
+        .viewer-overlay .viewer-replies .reply-item { background: rgba(255,255,255,0.05); padding: 6px 12px; border-radius: 8px; margin-bottom: 4px; text-align: left; font-size: 14px; }
+        .viewer-overlay .reply-input { position: absolute; bottom: 10px; left: 20px; right: 20px; display: flex; gap: 10px; }
+        .viewer-overlay .reply-input input { flex: 1; padding: 10px; border-radius: 30px; border: none; background: rgba(255,255,255,0.1); color: #fff; outline: none; }
+        .viewer-overlay .reply-input button { background: #13b879; border: none; color: #111619; padding: 10px 20px; border-radius: 30px; font-weight: 600; }
+    </style>
+</head>
+<body>
+
+<div class="phone-container">
+    <!-- Header -->
+    <header class="header">
+        <div class="logo-section">
+            <div class="logo-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="#111619"><path d="M12 2L2 12h3v8h6v-6h2v6h6v-8h3L12 2z"/></svg></div>
+            <div class="logo-text">NEX<span>ORA</span></div>
+        </div>
+        <div class="header-actions">
+            <svg viewBox="0 0 24 24"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 4.36 6 6.92 6 10v5l-2 2v1h16v-1l-2-2z"/></svg>
+            <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2.9 0-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+        </div>
+    </header>
+
+    <!-- Content -->
+    <main class="content" id="mainContent">
+        <div class="my-status-card" id="myStatusCard">
+            <div class="my-status-avatar" id="myStatusAvatar">👤</div>
+            <div class="my-status-info">
+                <h3>My Status</h3>
+                <p id="myStatusText">Tap to add a status update</p>
+            </div>
+        </div>
+        <div id="statusListContainer">
+            <!-- populated by JS -->
+        </div>
+    </main>
+
+    <!-- FAB -->
+    <div class="fab" id="fabBtn">
+        <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+    </div>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav">
+        <div class="nav-item" id="navChats"><div class="icon-wrapper"><svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg></div><div>Chats</div></div>
+        <div class="nav-item" id="navCalls"><svg viewBox="0 0 24 24"><path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 2 3 2.45 3 2.99 3 12.37 10.63 20 20.01 20c.54 0 .99-.65.99-1.19v-2.44c0-.54-.45-.99-.99-.99z"/></svg><div>Calls</div></div>
+        <div class="nav-item active" id="navStatus"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 12 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/></svg><div>Status</div></div>
+        <div class="nav-item" id="navCommunities"><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg><div>Communities</div></div>
+        <div class="nav-item" id="navSettings"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0.44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg><div>Settings</div></div>
+        <div class="slide-bar-container"><div class="slide-bar"></div></div>
+    </nav>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<!-- Viewer Overlay -->
+<div class="viewer-overlay" id="viewerOverlay">
+    <button class="close-viewer" id="closeViewer">✕</button>
+    <div class="status-content" id="viewerContent">Loading...</div>
+    <div class="viewer-info">
+        <div class="name" id="viewerName">User</div>
+        <div class="time" id="viewerTime">Just now</div>
+        <div class="viewer-actions">
+            <button id="viewerLikeBtn"><span class="icon">❤️</span> <span id="viewerLikeCount">0</span></button>
+            <button id="viewerReplyBtn"><span class="icon">💬</span> Reply</button>
+        </div>
+    </div>
+    <div class="viewer-replies" id="viewerReplies"></div>
+    <div class="reply-input" id="viewerReplyInput">
+        <input type="text" id="viewerReplyText" placeholder="Reply to this status..." />
+        <button id="viewerSendReply">Send</button>
+    </div>
+</div>
+
+<script>
+    // ---- Toast ----
+    const toast = document.getElementById('toast');
+    function showToast(text, isError = false) {
+        toast.textContent = text;
+        toast.className = 'toast' + (isError ? ' error' : '');
+        toast.style.display = 'block';
+        clearTimeout(toast._timeout);
+        toast._timeout = setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+
+    // ---- Auth & Navigation ----
+    document.addEventListener('DOMContentLoaded', async function() {
+        const ok = await checkAuth(true);
+        if (!ok) return;
+
+        document.getElementById('navChats').addEventListener('click', () => goTo('dashboard.html'));
+        document.getElementById('navCalls').addEventListener('click', () => goTo('calls.html'));
+        document.getElementById('navStatus').addEventListener('click', () => {});
+        document.getElementById('navCommunities').addEventListener('click', () => goTo('communities.html'));
+        document.getElementById('navSettings').addEventListener('click', () => goTo('settings.html'));
+
+        // FAB and My Status -> open create page
+        document.getElementById('fabBtn').addEventListener('click', () => goTo('status-create.html'));
+        document.getElementById('myStatusCard').addEventListener('click', () => goTo('status-create.html'));
+
+        await loadStatuses();
+        setInterval(loadStatuses, 30000);
+    });
+
+    // ---- Load statuses ----
+    async function loadStatuses() {
+        const token = getToken();
+        if (!token) return;
+
+        const container = document.getElementById('statusListContainer');
+        const myStatusContainer = document.getElementById('myStatusText');
+        const contacts = JSON.parse(localStorage.getItem('contacts') || '[]').map(c => c.phone).filter(Boolean);
+
+        try {
+            const res = await fetch('/api/statuses', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token, contacts })
+            });
+            const data = await res.json();
+            if (!data.success) return;
+
+            const statuses = data.statuses || [];
+            const myPhone = await getMyPhone(token);
+            const myStatuses = statuses.filter(s => s.phone === myPhone);
+            const contactStatuses = statuses.filter(s => s.phone !== myPhone);
+
+            if (myStatuses.length > 0) {
+                const latest = myStatuses[0];
+                myStatusContainer.textContent = latest.type === 'text' ? latest.content : '📷 Media status';
+            } else {
+                myStatusContainer.textContent = 'Tap to add a status update';
+            }
+
+            if (statuses.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 12 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/></svg>
+                        <p>No status updates</p>
+                        <p style="font-size:13px;margin-top:4px;">Tap + to share your status</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            myStatuses.forEach(s => { html += renderStatusItem(s, true); });
+            contactStatuses.forEach(s => { html += renderStatusItem(s, false); });
+            container.innerHTML = html;
+
+            container.querySelectorAll('.status-item').forEach(el => {
+                el.addEventListener('click', function() {
+                    const id = this.dataset.id;
+                    openViewer(id);
+                });
+            });
+
+        } catch (e) {
+            showToast('Failed to load statuses', true);
+        }
+    }
+
+    function renderStatusItem(s, isMine) {
+        const displayName = isMine ? 'My Status' : (s.displayName || 'Unknown');
+        const avatarChar = displayName.charAt(0).toUpperCase();
+        const viewerCount = s.viewers?.length || 0;
+        const likeCount = s.viewers?.filter(v => v.liked).length || 0;
+        const time = new Date(s.timestamp).toLocaleString();
+
+        return `
+            <div class="status-item" data-id="${s.id}">
+                <div class="avatar">${s.avatar ? `<img src="${s.avatar}" />` : avatarChar}</div>
+                <div class="info">
+                    <div class="name">${displayName}</div>
+                    <div class="time">${time}</div>
+                    <div class="meta">
+                        <span class="views">👁️ ${viewerCount}</span>
+                        <span class="likes">❤️ ${likeCount}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    async function getMyPhone(token) {
+        const res = await fetch('/api/me', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) });
+        const data = await res.json();
+        return data.success ? data.user.phone : null;
+    }
+
+    // ---- Status Viewer ----
+    const viewerOverlay = document.getElementById('viewerOverlay');
+    const viewerContent = document.getElementById('viewerContent');
+    const viewerName = document.getElementById('viewerName');
+    const viewerTime = document.getElementById('viewerTime');
+    const viewerLikeBtn = document.getElementById('viewerLikeBtn');
+    const viewerLikeCount = document.getElementById('viewerLikeCount');
+    const viewerReplies = document.getElementById('viewerReplies');
+    const viewerReplyText = document.getElementById('viewerReplyText');
+    const viewerSendReply = document.getElementById('viewerSendReply');
+    const closeViewer = document.getElementById('closeViewer');
+
+    let currentViewerStatusId = null;
+
+    async function openViewer(statusId) {
+        currentViewerStatusId = statusId;
+        viewerOverlay.classList.add('active');
+        viewerReplyText.value = '';
+        viewerReplies.innerHTML = '';
+
+        const token = getToken();
+        const contacts = JSON.parse(localStorage.getItem('contacts') || '[]').map(c => c.phone).filter(Boolean);
+        const res = await fetch('/api/statuses', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, contacts })
+        });
+        const data = await res.json();
+        if (!data.success) return;
+
+        const status = data.statuses.find(s => s.id === statusId);
+        if (!status) {
+            viewerContent.textContent = 'Status not found';
+            return;
+        }
+
+        const myPhone = await getMyPhone(token);
+        const myView = status.viewers?.find(v => v.phone === myPhone);
+        const liked = myView?.liked || false;
+
+        // Render content
+        if (status.type === 'text') {
+            viewerContent.innerHTML = `<div style="font-size:32px;padding:20px;">${status.content}</div>`;
+        } else if (status.type === 'image') {
+            viewerContent.innerHTML = `<img src="${status.content}" />`;
+        } else if (status.type === 'video') {
+            viewerContent.innerHTML = `<video controls src="${status.content}"></video>`;
+        }
+
+        viewerName.textContent = status.displayName || 'User';
+        viewerTime.textContent = new Date(status.timestamp).toLocaleString();
+
+        const likeCount = status.viewers?.filter(v => v.liked).length || 0;
+        viewerLikeCount.textContent = likeCount;
+        if (liked) viewerLikeBtn.classList.add('liked');
+        else viewerLikeBtn.classList.remove('liked');
+
+        const replies = status.viewers?.flatMap(v => v.replies?.map(r => ({ ...r, from: v.phone })) || []) || [];
+        if (replies.length === 0) {
+            viewerReplies.innerHTML = '<div style="color:#798694;text-align:center;font-size:14px;">No replies yet</div>';
+        } else {
+            let html = '';
+            replies.forEach(r => {
+                const isMine = r.phone === myPhone;
+                html += `<div class="reply-item"><strong>${isMine ? 'You' : 'Someone'}</strong>: ${r.text}</div>`;
+            });
+            viewerReplies.innerHTML = html;
+        }
+    }
+
+    viewerLikeBtn.addEventListener('click', async function() {
+        if (!currentViewerStatusId) return;
+        const token = getToken();
+        const res = await fetch('/api/status-react', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, statusId: currentViewerStatusId })
+        });
+        const data = await res.json();
+        if (data.success) {
+            openViewer(currentViewerStatusId);
+            loadStatuses();
+        }
+    });
+
+    viewerSendReply.addEventListener('click', async function() {
+        const text = viewerReplyText.value.trim();
+        if (!text || !currentViewerStatusId) return;
+        const token = getToken();
+        const res = await fetch('/api/status-reply', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, statusId: currentViewerStatusId, replyText: text })
+        });
+        const data = await res.json();
+        if (data.success) {
+            viewerReplyText.value = '';
+            showToast('Reply sent!');
+            openViewer(currentViewerStatusId);
+            loadStatuses();
+        } else {
+            showToast('Failed to send reply', true);
+        }
+    });
+
+    viewerReplyText.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') viewerSendReply.click();
+    });
+
+    closeViewer.addEventListener('click', () => viewerOverlay.classList.remove('active'));
+    viewerOverlay.addEventListener('click', function(e) {
+        if (e.target === this) viewerOverlay.classList.remove('active');
+    });
+
+    if (typeof goTo === 'undefined') {
+        window.goTo = function(url) { window.location.href = url; };
+    }
+</script>
+</body>
+</html>

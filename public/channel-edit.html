@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Edit Channel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="script.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background: #0B141A; color: #E9EDEF; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .app { width: 100%; max-width: 430px; height: 100vh; max-height: 850px; background: #111B21; border-radius: 28px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 0 60px rgba(20,195,122,0.08); position: relative; }
+        .header { padding: 16px 20px; display: flex; align-items: center; gap: 12px; background: #111B21; border-bottom: 1px solid #1F2C33; }
+        .header .back { color: #7E8A95; cursor: pointer; font-size: 24px; }
+        .header .title { font-size: 20px; font-weight: 700; flex: 1; }
+        .header .save-btn { color: #14C37A; font-weight: 600; cursor: pointer; }
+        .content { flex: 1; overflow-y: auto; padding: 20px; }
+        .avatar-circle { width: 80px; height: 80px; border-radius: 50%; background: #2A3942; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; border: 2px solid #14C37A; }
+        .avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
+        .avatar-circle i { font-size: 32px; color: #7E8A95; }
+        .input-group { margin-bottom: 16px; }
+        .input-group label { display: block; font-size: 14px; color: #7E8A95; margin-bottom: 4px; }
+        .input-group input, .input-group textarea { width: 100%; background: #1F2C33; border: none; color: #E9EDEF; padding: 12px; border-radius: 12px; outline: none; font-size: 16px; }
+        .input-group textarea { min-height: 80px; resize: vertical; }
+        .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: #14C37A; color: #111B21; padding: 8px 20px; border-radius: 8px; font-weight: 600; z-index: 999; display: none; }
+        .toast.error { background: #E74C3C; color: #fff; }
+    </style>
+</head>
+<body>
+
+<div class="app">
+    <div class="header">
+        <div class="back" id="backBtn"><i data-lucide="arrow-left" class="w-5 h-5"></i></div>
+        <div class="title">Edit Channel</div>
+        <div class="save-btn" id="saveBtn">Save</div>
+    </div>
+
+    <div class="content" id="editContent">
+        <div class="avatar-circle" id="avatarPicker">
+            <i data-lucide="camera" class="w-8 h-8"></i>
+        </div>
+        <input type="file" id="avatarFile" accept="image/*" style="display:none;" />
+        <div class="input-group">
+            <label>Channel name</label>
+            <input type="text" id="channelName" />
+        </div>
+        <div class="input-group">
+            <label>Description</label>
+            <textarea id="channelDesc"></textarea>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+    lucide.createIcons();
+    const toast = document.getElementById('toast');
+    function showToast(text, isError = false) {
+        toast.textContent = text;
+        toast.className = 'toast' + (isError ? ' error' : '');
+        toast.style.display = 'block';
+        clearTimeout(toast._timeout);
+        toast._timeout = setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        const ok = await checkAuth(true);
+        if (!ok) return;
+
+        document.getElementById('backBtn').addEventListener('click', () => goTo('communities.html'));
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const channelId = urlParams.get('id');
+        if (!channelId) { showToast('No channel specified', true); return; }
+
+        const token = getToken();
+        let channel = null;
+        let avatarData = null;
+
+        try {
+            const res = await fetch(`/api/channel/${channelId}`);
+            const data = await res.json();
+            if (!data.success) { showToast('Channel not found', true); return; }
+            channel = data.channel;
+            document.getElementById('channelName').value = channel.name || '';
+            document.getElementById('channelDesc').value = channel.description || '';
+            if (channel.avatar) {
+                document.getElementById('avatarPicker').innerHTML = `<img src="${channel.avatar}" />`;
+            }
+        } catch(e) { showToast('Failed to load channel', true); }
+
+        document.getElementById('avatarPicker').addEventListener('click', () => document.getElementById('avatarFile').click());
+        document.getElementById('avatarFile').addEventListener('change', function(e) {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    avatarData = ev.target.result;
+                    document.getElementById('avatarPicker').innerHTML = `<img src="${avatarData}" />`;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('saveBtn').addEventListener('click', async function() {
+            const name = document.getElementById('channelName').value.trim();
+            const description = document.getElementById('channelDesc').value.trim();
+            if (!name) { showToast('Name is required', true); return; }
+            const updates = { token, channelId, name, description };
+            if (avatarData) updates.avatar = avatarData;
+            try {
+                const res = await fetch('/api/update-channel', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updates)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast('Channel updated!');
+                    setTimeout(() => goTo(`channel-info.html?id=${channelId}`), 1200);
+                } else {
+                    showToast(data.error || 'Failed', true);
+                }
+            } catch(e) { showToast('Network error', true); }
+        });
+    });
+</script>
+</body>
+</html>

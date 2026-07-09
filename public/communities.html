@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Communities</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="script.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background: #0B141A; color: #E9EDEF; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .app { width: 100%; max-width: 430px; height: 100vh; max-height: 850px; background: #111B21; border-radius: 28px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 0 60px rgba(20,195,122,0.08); position: relative; }
+
+        .header { padding: 16px 20px 8px 20px; display: flex; justify-content: space-between; align-items: center; background: #111B21; border-bottom: 1px solid #1F2C33; }
+        .header .logo { font-size: 22px; font-weight: 700; }
+        .header .logo span { color: #14C37A; }
+        .header .search-icon { color: #7E8A95; cursor: pointer; transition: 0.2s; }
+
+        .tab-bar { display: flex; padding: 0 20px; gap: 20px; border-bottom: 1px solid #1F2C33; background: #111B21; }
+        .tab { padding: 12px 0 10px; font-size: 14px; font-weight: 500; color: #7E8A95; cursor: pointer; border-bottom: 2px solid transparent; transition: 0.2s; }
+        .tab.active { color: #14C37A; border-bottom-color: #14C37A; }
+
+        .content { flex: 1; overflow-y: auto; padding: 8px 16px 0; }
+        .list-item { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #1F2C33; cursor: pointer; transition: 0.1s; }
+        .list-item:hover { background: rgba(255,255,255,0.02); }
+        .list-item .avatar { width: 48px; height: 48px; border-radius: 50%; background: #2A3942; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; overflow: hidden; flex-shrink: 0; margin-right: 12px; }
+        .list-item .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .list-item .info { flex: 1; min-width: 0; }
+        .list-item .info .name { font-weight: 500; font-size: 16px; }
+        .list-item .info .sub { font-size: 13px; color: #7E8A95; }
+        .list-item .meta { text-align: right; flex-shrink: 0; margin-left: 8px; }
+        .list-item .meta .count { font-size: 12px; color: #7E8A95; }
+
+        .fab { position: absolute; bottom: 80px; right: 16px; width: 56px; height: 56px; background: #14C37A; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(20,195,122,0.3); cursor: pointer; z-index: 10; }
+        .fab:hover { transform: scale(1.05); }
+        .fab svg { width: 24px; height: 24px; fill: #111B21; }
+
+        .bottom-nav { display: flex; background: #111B21; border-top: 1px solid #1F2C33; padding: 6px 0 12px 0; justify-content: space-around; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #7E8A95; font-size: 10px; font-weight: 500; cursor: pointer; transition: 0.2s; text-decoration: none; gap: 2px; padding: 4px 0; position: relative; }
+        .nav-item i { font-size: 24px; }
+        .nav-item.active { color: #14C37A; }
+        .nav-item.active .slide-bar { display: block; }
+        .slide-bar { display: none; width: 20px; height: 3px; background: #14C37A; border-radius: 2px; margin-top: 2px; }
+
+        .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: #14C37A; color: #111B21; padding: 8px 20px; border-radius: 8px; font-weight: 600; z-index: 999; display: none; }
+        .toast.error { background: #E74C3C; color: #fff; }
+        .empty-state { text-align: center; padding: 60px 20px; color: #7E8A95; }
+        .empty-state i { font-size: 48px; color: #1F2C33; display: block; margin-bottom: 12px; }
+    </style>
+</head>
+<body>
+
+<div class="app">
+    <div class="header">
+        <div class="logo">NEXORA<span>CHQT</span></div>
+        <div class="search-icon" id="searchBtn"><i data-lucide="search" class="w-5 h-5"></i></div>
+    </div>
+
+    <div class="tab-bar">
+        <div class="tab active" id="tabGroups">Groups</div>
+        <div class="tab" id="tabChannels">Channels</div>
+    </div>
+
+    <div class="content" id="contentContainer">
+        <div id="listContainer"></div>
+    </div>
+
+    <div class="fab" id="fabBtn">
+        <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+    </div>
+
+    <div class="bottom-nav">
+        <div class="nav-item" id="navChats"><i data-lucide="message-square"></i><span>Chats</span><div class="slide-bar"></div></div>
+        <div class="nav-item" id="navStatus"><i data-lucide="circle"></i><span>Status</span><div class="slide-bar"></div></div>
+        <div class="nav-item active" id="navCommunities"><i data-lucide="users"></i><span>Communities</span><div class="slide-bar"></div></div>
+        <div class="nav-item" id="navSettings"><i data-lucide="settings"></i><span>Settings</span><div class="slide-bar"></div></div>
+    </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+    lucide.createIcons();
+    const toast = document.getElementById('toast');
+    function showToast(text, isError = false) {
+        toast.textContent = text;
+        toast.className = 'toast' + (isError ? ' error' : '');
+        toast.style.display = 'block';
+        clearTimeout(toast._timeout);
+        toast._timeout = setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        const ok = await checkAuth(true);
+        if (!ok) return;
+
+        document.getElementById('navChats').addEventListener('click', () => goTo('dashboard.html'));
+        document.getElementById('navStatus').addEventListener('click', () => goTo('status.html'));
+        document.getElementById('navSettings').addEventListener('click', () => goTo('settings.html'));
+
+        document.getElementById('searchBtn').addEventListener('click', () => showToast('🔍 Search coming soon'));
+
+        let currentTab = 'groups';
+        document.getElementById('tabGroups').addEventListener('click', function() {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            currentTab = 'groups';
+            renderList('groups');
+        });
+        document.getElementById('tabChannels').addEventListener('click', function() {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            currentTab = 'channels';
+            renderList('channels');
+        });
+
+        document.getElementById('fabBtn').addEventListener('click', function() {
+            if (currentTab === 'groups') {
+                goTo('new-group.html');
+            } else {
+                goTo('new-channel.html');
+            }
+        });
+
+        async function renderList(type) {
+            const container = document.getElementById('listContainer');
+            const token = getToken();
+            let items = [];
+
+            if (type === 'groups') {
+                try {
+                    const res = await fetch('/api/my-groups', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        items = data.groups.map(g => ({
+                            id: g.id,
+                            name: g.name,
+                            avatar: g.avatar || '👥',
+                            count: g.members?.length || 0,
+                            lastMsg: 'Group chat',
+                            time: new Date(g.createdAt).toLocaleDateString(),
+                            type: 'group'
+                        }));
+                    }
+                } catch(e) { showToast('Failed to load groups', true); }
+            } else {
+                try {
+                    const res = await fetch('/api/my-channels', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        items = data.channels.map(c => ({
+                            id: c.id,
+                            name: c.name,
+                            avatar: c.avatar || '📢',
+                            count: c.memberCount || c.members?.length || 0,
+                            lastMsg: 'Channel updates',
+                            time: new Date(c.createdAt).toLocaleDateString(),
+                            type: 'channel'
+                        }));
+                    }
+                } catch(e) { showToast('Failed to load channels', true); }
+            }
+
+            if (items.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i data-lucide="${type === 'groups' ? 'users' : 'megaphone'}"></i>
+                        <p>No ${type} yet</p>
+                        <p style="font-size:13px;margin-top:4px;">Tap + to create one</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            let html = '';
+            items.forEach(item => {
+                const avatarContent = typeof item.avatar === 'string' && item.avatar.includes('<img') ? item.avatar : `<span style="font-size:20px;">${item.avatar}</span>`;
+                // *** UPDATED TARGET ***
+                const target = item.type === 'group' ? `group-chat.html?id=${item.id}` : `channel-chat.html?id=${item.id}`;
+                html += `
+                    <div class="list-item" data-target="${target}">
+                        <div class="avatar">${avatarContent}</div>
+                        <div class="info">
+                            <div class="name">${item.name}</div>
+                            <div class="sub">${item.count} ${item.type === 'group' ? 'members' : 'subscribers'}</div>
+                        </div>
+                        <div class="meta">
+                            <div class="count">${item.time}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+            lucide.createIcons();
+
+            container.querySelectorAll('.list-item').forEach(el => {
+                el.addEventListener('click', function() {
+                    const target = this.dataset.target;
+                    if (target) goTo(target);
+                });
+            });
+        }
+
+        renderList('groups');
+    });
+</script>
+</body>
+</html>

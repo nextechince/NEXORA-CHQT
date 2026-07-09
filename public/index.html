@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXORA CHQT</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js"></script>
+    <style>
+        .splash {
+            width: 100%;
+            max-width: 430px;
+            height: 100vh;
+            max-height: 850px;
+            background: radial-gradient(circle at center, #1a0f2a, #0B141A);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 28px;
+            box-shadow: 0 0 80px rgba(168, 85, 247, 0.3), 0 0 160px rgba(168, 85, 247, 0.1);
+        }
+        .splash h1 {
+            font-size: 52px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #c084fc, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 4px;
+            text-shadow: 0 0 40px rgba(168, 85, 247, 0.3);
+        }
+        .splash p {
+            color: #c084fc;
+            opacity: 0.7;
+            margin-top: 10px;
+            font-size: 18px;
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+<div class="splash glow-container">
+    <h1>NEXORA</h1>
+    <p>CHQT</p>
+    <div style="margin-top:30px; opacity:0.5; color:#7E8A95; font-size:14px;">✦ Next generation messaging ✦</div>
+</div>
+<script>
+    setTimeout(() => goTo('login.html'), 2000);
+</script>
+</body>
+</html>

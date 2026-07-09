@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js"></script>
+    <style>
+        .country-selector {
+            background: #1F2C33;
+            border-radius: 30px;
+            padding: 6px 16px;
+            margin-bottom: 16px;
+        }
+        .country-selector select {
+            background: transparent;
+            color: #E9EDEF;
+            padding: 12px 0;
+            border: none;
+            width: 100%;
+            font-size: 16px;
+            outline: none;
+            cursor: pointer;
+        }
+        .country-selector select option {
+            background: #111B21;
+            color: #E9EDEF;
+            padding: 8px;
+        }
+        .phone-input-wrapper {
+            display: flex;
+            align-items: center;
+            background: #1F2C33;
+            border-radius: 30px;
+            padding: 6px 16px;
+            margin-bottom: 16px;
+            gap: 8px;
+        }
+        .phone-input-wrapper .country-prefix {
+            color: #E9EDEF;
+            font-weight: 600;
+            font-size: 16px;
+            white-space: nowrap;
+            background: #2A3942;
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+        .phone-input-wrapper input {
+            background: transparent;
+            color: #E9EDEF;
+            padding: 12px 0;
+            border: none;
+            flex: 1;
+            font-size: 16px;
+            outline: none;
+        }
+        .phone-input-wrapper input::placeholder {
+            color: #7E8A95;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+<div class="glow-container" style="display:flex; justify-content:center; align-items:center; height:100vh; background:#0B141A;">
+    <div class="glow-box">
+        <h2 style="text-align:center; font-size:28px; color:#E9EDEF;">NEXORA CHQT</h2>
+        <p style="text-align:center; color:#AEBAC1; margin-bottom:20px;">Next generation messaging</p>
+
+        <!-- Country Selector (above) -->
+        <div class="country-selector">
+            <select id="countryCode">
+                <!-- populated by JS -->
+            </select>
+        </div>
+
+        <!-- Phone Input with country code prefix -->
+        <div class="phone-input-wrapper">
+            <span class="country-prefix" id="countryPrefix">+234</span>
+            <input type="tel" id="phoneInput" placeholder="e.g., 8123909919" />
+        </div>
+
+        <button class="btn-primary" id="continueBtn" style="width:100%;">Continue</button>
+    </div>
+</div>
+
+<script>
+    // Complete country list with example numbers
+    const countries = [
+        // ... (full list from previous message – I'll include again for completeness)
+        { code: "+93", name: "Afghanistan", example: "700000000" },
+        { code: "+355", name: "Albania", example: "690000000" },
+        { code: "+213", name: "Algeria", example: "550000000" },
+        { code: "+376", name: "Andorra", example: "312345" },
+        { code: "+244", name: "Angola", example: "900000000" },
+        { code: "+1-268", name: "Antigua and Barbuda", example: "7000000" },
+        { code: "+54", name: "Argentina", example: "910000000" },
+        { code: "+374", name: "Armenia", example: "77000000" },
+        { code: "+61", name: "Australia", example: "400000000" },
+        { code: "+43", name: "Austria", example: "650000000" },
+        { code: "+994", name: "Azerbaijan", example: "500000000" },
+        { code: "+1-242", name: "Bahamas", example: "7000000" },
+        { code: "+973", name: "Bahrain", example: "35000000" },
+        { code: "+880", name: "Bangladesh", example: "1700000000" },
+        { code: "+1-246", name: "Barbados", example: "7000000" },
+        { code: "+375", name: "Belarus", example: "250000000" },
+        { code: "+32", name: "Belgium", example: "470000000" },
+        { code: "+501", name: "Belize", example: "6100000" },
+        { code: "+229", name: "Benin", example: "90000000" },
+        { code: "+975", name: "Bhutan", example: "17000000" },
+        { code: "+591", name: "Bolivia", example: "70000000" },
+        { code: "+387", name: "Bosnia and Herzegovina", example: "60000000" },
+        { code: "+267", name: "Botswana", example: "70000000" },
+        { code: "+55", name: "Brazil", example: "1199999999" },
+        { code: "+673", name: "Brunei", example: "8000000" },
+        { code: "+359", name: "Bulgaria", example: "880000000" },
+        { code: "+226", name: "Burkina Faso", example: "70000000" },
+        { code: "+257", name: "Burundi", example: "70000000" },
+        { code: "+855", name: "Cambodia", example: "12000000" },
+        { code: "+237", name: "Cameroon", example: "600000000" },
+        { code: "+1", name: "Canada", example: "7000000000" },
+        { code: "+238", name: "Cape Verde", example: "9000000" },
+        { code: "+236", name: "Central African Republic", example: "70000000" },
+        { code: "+235", name: "Chad", example: "60000000" },
+        { code: "+56", name: "Chile", example: "900000000" },
+        { code: "+86", name: "China", example: "13000000000" },
+        { code: "+57", name: "Colombia", example: "3000000000" },
+        { code: "+269", name: "Comoros", example: "7000000" },
+        { code: "+242", name: "Congo", example: "60000000" },
+        { code: "+243", name: "Congo (DRC)", example: "800000000" },
+        { code: "+506", name: "Costa Rica", example: "80000000" },
+        { code: "+385", name: "Croatia", example: "900000000" },
+        { code: "+53", name: "Cuba", example: "50000000" },
+        { code: "+357", name: "Cyprus", example: "95000000" },
+        { code: "+420", name: "Czech Republic", example: "700000000" },
+        { code: "+45", name: "Denmark", example: "20000000" },
+        { code: "+253", name: "Djibouti", example: "70000000" },
+        { code: "+1-767", name: "Dominica", example: "7000000" },
+        { code: "+1-809", name: "Dominican Republic", example: "800000000" },
+        { code: "+593", name: "Ecuador", example: "900000000" },
+        { code: "+20", name: "Egypt", example: "1000000000" },
+        { code: "+503", name: "El Salvador", example: "70000000" },
+        { code: "+240", name: "Equatorial Guinea", example: "55000000" },
+        { code: "+291", name: "Eritrea", example: "7000000" },
+        { code: "+372", name: "Estonia", example: "50000000" },
+        { code: "+251", name: "Ethiopia", example: "900000000" },
+        { code: "+679", name: "Fiji", example: "7000000" },
+        { code: "+358", name: "Finland", example: "40000000" },
+        { code: "+33", name: "France", example: "700000000" },
+        { code: "+241", name: "Gabon", example: "60000000" },
+        { code: "+220", name: "Gambia", example: "9000000" },
+        { code: "+995", name: "Georgia", example: "550000000" },
+        { code: "+49", name: "Germany", example: "1500000000" },
+        { code: "+233", name: "Ghana", example: "200000000" },
+        { code: "+30", name: "Greece", example: "690000000" },
+        { code: "+1-473", name: "Grenada", example: "7000000" },
+        { code: "+502", name: "Guatemala", example: "50000000" },
+        { code: "+224", name: "Guinea", example: "60000000" },
+        { code: "+245", name: "Guinea-Bissau", example: "60000000" },
+        { code: "+592", name: "Guyana", example: "6000000" },
+        { code: "+509", name: "Haiti", example: "30000000" },
+        { code: "+504", name: "Honduras", example: "90000000" },
+        { code: "+36", name: "Hungary", example: "200000000" },
+        { code: "+354", name: "Iceland", example: "7000000" },
+        { code: "+91", name: "India", example: "9000000000" },
+        { code: "+62", name: "Indonesia", example: "8100000000" },
+        { code: "+98", name: "Iran", example: "9100000000" },
+        { code: "+964", name: "Iraq", example: "7700000000" },
+        { code: "+353", name: "Ireland", example: "850000000" },
+        { code: "+972", name: "Israel", example: "500000000" },
+        { code: "+39", name: "Italy", example: "320000000" },
+        { code: "+1-876", name: "Jamaica", example: "8000000" },
+        { code: "+81", name: "Japan", example: "9000000000" },
+        { code: "+962", name: "Jordan", example: "790000000" },
+        { code: "+7", name: "Kazakhstan", example: "7000000000" },
+        { code: "+254", name: "Kenya", example: "700000000" },
+        { code: "+686", name: "Kiribati", example: "9000000" },
+        { code: "+383", name: "Kosovo", example: "40000000" },
+        { code: "+965", name: "Kuwait", example: "50000000" },
+        { code: "+996", name: "Kyrgyzstan", example: "500000000" },
+        { code: "+856", name: "Laos", example: "20000000" },
+        { code: "+371", name: "Latvia", example: "20000000" },
+        { code: "+961", name: "Lebanon", example: "70000000" },
+        { code: "+266", name: "Lesotho", example: "50000000" },
+        { code: "+231", name: "Liberia", example: "70000000" },
+        { code: "+218", name: "Libya", example: "90000000" },
+        { code: "+423", name: "Liechtenstein", example: "7000000" },
+        { code: "+370", name: "Lithuania", example: "60000000" },
+        { code: "+352", name: "Luxembourg", example: "60000000" },
+        { code: "+261", name: "Madagascar", example: "300000000" },
+        { code: "+265", name: "Malawi", example: "880000000" },
+        { code: "+60", name: "Malaysia", example: "190000000" },
+        { code: "+960", name: "Maldives", example: "7000000" },
+        { code: "+223", name: "Mali", example: "70000000" },
+        { code: "+356", name: "Malta", example: "79000000" },
+        { code: "+692", name: "Marshall Islands", example: "4000000" },
+        { code: "+222", name: "Mauritania", example: "70000000" },
+        { code: "+230", name: "Mauritius", example: "50000000" },
+        { code: "+52", name: "Mexico", example: "5500000000" },
+        { code: "+691", name: "Micronesia", example: "3000000" },
+        { code: "+373", name: "Moldova", example: "60000000" },
+        { code: "+377", name: "Monaco", example: "60000000" },
+        { code: "+976", name: "Mongolia", example: "90000000" },
+        { code: "+382", name: "Montenegro", example: "60000000" },
+        { code: "+212", name: "Morocco", example: "600000000" },
+        { code: "+258", name: "Mozambique", example: "800000000" },
+        { code: "+95", name: "Myanmar", example: "900000000" },
+        { code: "+264", name: "Namibia", example: "80000000" },
+        { code: "+674", name: "Nauru", example: "5000000" },
+        { code: "+977", name: "Nepal", example: "9800000000" },
+        { code: "+31", name: "Netherlands", example: "600000000" },
+        { code: "+64", name: "New Zealand", example: "200000000" },
+        { code: "+505", name: "Nicaragua", example: "80000000" },
+        { code: "+227", name: "Niger", example: "90000000" },
+        { code: "+234", name: "Nigeria", example: "8123909919" },
+        { code: "+850", name: "North Korea", example: "190000000" },
+        { code: "+47", name: "Norway", example: "40000000" },
+        { code: "+968", name: "Oman", example: "90000000" },
+        { code: "+92", name: "Pakistan", example: "3000000000" },
+        { code: "+680", name: "Palau", example: "3000000" },
+        { code: "+970", name: "Palestine", example: "50000000" },
+        { code: "+507", name: "Panama", example: "60000000" },
+        { code: "+675", name: "Papua New Guinea", example: "70000000" },
+        { code: "+595", name: "Paraguay", example: "90000000" },
+        { code: "+51", name: "Peru", example: "900000000" },
+        { code: "+63", name: "Philippines", example: "9000000000" },
+        { code: "+48", name: "Poland", example: "500000000" },
+        { code: "+351", name: "Portugal", example: "900000000" },
+        { code: "+974", name: "Qatar", example: "50000000" },
+        { code: "+40", name: "Romania", example: "700000000" },
+        { code: "+7", name: "Russia", example: "9000000000" },
+        { code: "+250", name: "Rwanda", example: "700000000" },
+        { code: "+1-869", name: "Saint Kitts and Nevis", example: "7000000" },
+        { code: "+1-758", name: "Saint Lucia", example: "7000000" },
+        { code: "+1-784", name: "Saint Vincent and the Grenadines", example: "7000000" },
+        { code: "+685", name: "Samoa", example: "7000000" },
+        { code: "+378", name: "San Marino", example: "6000000" },
+        { code: "+239", name: "Sao Tome and Principe", example: "9000000" },
+        { code: "+966", name: "Saudi Arabia", example: "500000000" },
+        { code: "+221", name: "Senegal", example: "70000000" },
+        { code: "+381", name: "Serbia", example: "600000000" },
+        { code: "+248", name: "Seychelles", example: "7000000" },
+        { code: "+232", name: "Sierra Leone", example: "70000000" },
+        { code: "+65", name: "Singapore", example: "80000000" },
+        { code: "+421", name: "Slovakia", example: "900000000" },
+        { code: "+386", name: "Slovenia", example: "40000000" },
+        { code: "+677", name: "Solomon Islands", example: "7000000" },
+        { code: "+252", name: "Somalia", example: "70000000" },
+        { code: "+27", name: "South Africa", example: "800000000" },
+        { code: "+82", name: "South Korea", example: "1000000000" },
+        { code: "+211", name: "South Sudan", example: "90000000" },
+        { code: "+34", name: "Spain", example: "600000000" },
+        { code: "+94", name: "Sri Lanka", example: "700000000" },
+        { code: "+249", name: "Sudan", example: "90000000" },
+        { code: "+597", name: "Suriname", example: "7000000" },
+        { code: "+268", name: "Eswatini", example: "70000000" },
+        { code: "+46", name: "Sweden", example: "700000000" },
+        { code: "+41", name: "Switzerland", example: "700000000" },
+        { code: "+963", name: "Syria", example: "900000000" },
+        { code: "+886", name: "Taiwan", example: "900000000" },
+        { code: "+992", name: "Tajikistan", example: "90000000" },
+        { code: "+255", name: "Tanzania", example: "700000000" },
+        { code: "+66", name: "Thailand", example: "800000000" },
+        { code: "+670", name: "Timor-Leste", example: "7000000" },
+        { code: "+228", name: "Togo", example: "90000000" },
+        { code: "+676", name: "Tonga", example: "7000000" },
+        { code: "+1-868", name: "Trinidad and Tobago", example: "7000000" },
+        { code: "+216", name: "Tunisia", example: "90000000" },
+        { code: "+90", name: "Turkey", example: "5000000000" },
+        { code: "+993", name: "Turkmenistan", example: "60000000" },
+        { code: "+688", name: "Tuvalu", example: "6000000" },
+        { code: "+256", name: "Uganda", example: "700000000" },
+        { code: "+380", name: "Ukraine", example: "500000000" },
+        { code: "+971", name: "United Arab Emirates", example: "500000000" },
+        { code: "+44", name: "United Kingdom", example: "7000000000" },
+        { code: "+1", name: "United States", example: "7000000000" },
+        { code: "+598", name: "Uruguay", example: "90000000" },
+        { code: "+998", name: "Uzbekistan", example: "90000000" },
+        { code: "+678", name: "Vanuatu", example: "5000000" },
+        { code: "+379", name: "Vatican City", example: "6000000" },
+        { code: "+58", name: "Venezuela", example: "400000000" },
+        { code: "+84", name: "Vietnam", example: "900000000" },
+        { code: "+967", name: "Yemen", example: "700000000" },
+        { code: "+260", name: "Zambia", example: "900000000" },
+        { code: "+263", name: "Zimbabwe", example: "700000000" }
+    ];
+
+    // Sort alphabetically
+    countries.sort((a, b) => a.name.localeCompare(b.name));
+
+    const select = document.getElementById('countryCode');
+    const prefixSpan = document.getElementById('countryPrefix');
+    const phoneInput = document.getElementById('phoneInput');
+
+    // Populate dropdown
+    countries.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.code;
+        opt.textContent = `${c.name} (${c.code})`;
+        opt.dataset.example = c.example || 'Phone number';
+        select.appendChild(opt);
+    });
+
+    // Set default to Nigeria
+    select.value = '+234';
+    updateUI();
+
+    // Update on change
+    select.addEventListener('change', function() {
+        const selected = this.options[this.selectedIndex];
+        const code = this.value;
+        const example = selected.dataset.example || 'Phone number';
+        prefixSpan.textContent = code;
+        phoneInput.placeholder = `e.g., ${example}`;
+    });
+
+    function updateUI() {
+        const selected = select.options[select.selectedIndex];
+        const code = select.value;
+        const example = selected ? selected.dataset.example : 'Phone number';
+        prefixSpan.textContent = code;
+        phoneInput.placeholder = `e.g., ${example}`;
+    }
+
+    document.getElementById('continueBtn').addEventListener('click', async function() {
+        const phone = phoneInput.value.trim();
+        const code = select.value;
+        if (!phone) return alert('Enter phone number');
+        const fullPhone = code + phone;
+        const cleanPhone = fullPhone.replace(/[\s\-\(\)]/g, '');
+        const res = await fetch('/api/request-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone: cleanPhone })
+        });
+        const data = await res.json();
+        if (data.success) {
+            sessionStorage.setItem('verifyPhone', cleanPhone);
+            sessionStorage.setItem('otpCode', data.otp);
+            goTo('otp.html');
+        } else {
+            alert('Failed to send OTP');
+        }
+    });
+</script>
+</body>
+</html>

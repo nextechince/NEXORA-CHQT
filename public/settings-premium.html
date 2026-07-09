@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NEXORA CHQT Premium</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0" rel="stylesheet">
+    <script src="script.js"></script>
+    <style>
+        :root {
+            --bg-color: #0B141A;
+            --surface-color: #111B21;
+            --surface2: #1F2C33;
+            --text-primary: #E9EDEF;
+            --text-secondary: #AEBAC1;
+            --accent-color: #14C37A;
+            --divider-color: #2A3942;
+            --danger-color: #E74C3C;
+            --premium-gold: #FFD700;
+        }
+        .light-mode {
+            --bg-color: #F5F7F8;
+            --surface-color: #FFFFFF;
+            --surface2: #E4E6EB;
+            --text-primary: #1C252C;
+            --text-secondary: #607D8B;
+            --divider-color: #CFD8DC;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-primary); display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; transition: background-color 0.3s; }
+        .phone-container { width: 100%; max-width: 450px; background-color: var(--bg-color); min-height: 100vh; display: flex; flex-direction: column; position: relative; padding-bottom: 20px; }
+        header { padding: 16px 20px; display: flex; align-items: center; gap: 12px; background: var(--surface-color); border-bottom: 1px solid var(--divider-color); }
+        header .back-btn { color: var(--text-secondary); cursor: pointer; font-size: 28px; }
+        header h1 { font-size: 24px; font-weight: 700; flex: 1; }
+        header .badge { background: var(--premium-gold); color: #111B21; font-size: 12px; font-weight: 700; padding: 2px 12px; border-radius: 30px; letter-spacing: 0.5px; }
+
+        .hero { padding: 24px 20px 16px; text-align: center; }
+        .hero .icon { font-size: 48px; color: var(--premium-gold); margin-bottom: 8px; }
+        .hero h2 { font-size: 28px; font-weight: 700; }
+        .hero .sub { color: var(--text-secondary); font-size: 14px; margin-top: 4px; }
+
+        .pricing-row { display: flex; gap: 12px; padding: 0 20px 16px; }
+        .pricing-card { flex: 1; background: var(--surface2); border-radius: 16px; padding: 16px; text-align: center; border: 2px solid transparent; transition: 0.2s; cursor: pointer; }
+        .pricing-card.active { border-color: var(--accent-color); background: var(--surface-color); }
+        .pricing-card .plan { font-size: 14px; font-weight: 600; color: var(--text-secondary); }
+        .pricing-card .price { font-size: 24px; font-weight: 700; margin: 4px 0; }
+        .pricing-card .price .currency { font-size: 16px; font-weight: 400; color: var(--text-secondary); }
+        .pricing-card .period { font-size: 12px; color: var(--text-secondary); }
+        .pricing-card .savings { background: var(--accent-color); color: #111B21; font-size: 10px; font-weight: 700; padding: 2px 10px; border-radius: 30px; display: inline-block; margin-top: 4px; }
+
+        .section-title { padding: 16px 20px 8px; font-size: 16px; font-weight: 600; }
+        .feature-grid { display: flex; flex-direction: column; gap: 2px; padding: 0 16px 16px; }
+        .feature-item { display: flex; align-items: flex-start; gap: 14px; padding: 10px 12px; background: var(--surface-color); border-radius: 12px; border: 1px solid var(--divider-color); }
+        .feature-item .icon-box { width: 36px; height: 36px; border-radius: 50%; background: rgba(20,195,122,0.12); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--accent-color); }
+        .feature-item .icon-box span { font-size: 20px; }
+        .feature-item .text { flex: 1; }
+        .feature-item .text .title { font-size: 15px; font-weight: 500; }
+        .feature-item .text .desc { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+
+        .subscribe-container { padding: 16px 20px 24px; }
+        .subscribe-btn { width: 100%; padding: 14px; background: var(--accent-color); color: #111B21; border: none; border-radius: 30px; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .subscribe-btn:hover { transform: scale(1.02); }
+        .subscribe-btn:active { transform: scale(0.98); }
+        .subscribe-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .footer-text { text-align: center; padding: 0 20px 20px; font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+        .footer-text a { color: var(--accent-color); text-decoration: none; }
+
+        .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: var(--accent-color); color: #111B21; padding: 10px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; z-index: 999; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .toast.error { background: var(--danger-color); color: #fff; }
+    </style>
+</head>
+<body>
+
+<div class="phone-container">
+    <header>
+        <span class="back-btn material-symbols-outlined" id="backBtn">arrow_back</span>
+        <h1>NEXORA CHQT Premium</h1>
+        <span class="badge">⭐</span>
+    </header>
+
+    <div class="hero">
+        <div class="icon">👑</div>
+        <h2>Unlock the Full Experience</h2>
+        <p class="sub">Exclusive features to supercharge your messaging.</p>
+    </div>
+
+    <div class="pricing-row">
+        <div class="pricing-card active" id="annualPlan">
+            <div class="plan">Annual</div>
+            <div class="price"><span class="currency">₦</span>5,000<span class="currency">/year</span></div>
+            <div class="period">Was ₦7,500/year</div>
+            <div class="savings">Save 33%</div>
+        </div>
+        <div class="pricing-card" id="monthlyPlan">
+            <div class="plan">Monthly</div>
+            <div class="price"><span class="currency">₦</span>700<span class="currency">/month</span></div>
+            <div class="period">Billed monthly</div>
+        </div>
+    </div>
+
+    <div class="section-title">✨ Premium Features</div>
+    <div class="feature-grid">
+        <div class="feature-item">
+            <div class="icon-box"><span class="material-symbols-outlined">auto_awesome</span></div>
+            <div class="text"><div class="title">AI-Powered Smart Replies</div><div class="desc">Get context-aware suggested replies for any message.</div></div>
+        </div>
+        <div class="feature-item">
+            <div class="icon-box"><span class="material-symbols-outlined">schedule</span></div>
+            <div class="text"><div class="title">Message Scheduler</div><div class="desc">Schedule messages to be sent at a specific date and time.</div></div>
+        </div>
+        <div class="feature-item">
+            <div class="icon-box"><span class="material-symbols-outlined">visibility_off</span></div>
+            <div class="text"><div class="title">Anonymous Mode</div><div class="desc">Browse chats without showing your "last seen" or "typing" status.</div></div>
+        </div>
+        <div class="feature-item">
+            <div class="icon-box"><span class="material-symbols-outlined">palette</span></div>
+            <div class="text"><div class="title">Custom Chat Themes</div><div class="desc">Choose from 50+ unique themes with gradients and animations.</div></div>
+        </div>
+        <div class="feature-item">
+            <div class="icon-box"><span class="material-symbols-outlined">visibility</span></div>
+            <div class="text"><div class="title">View Once Media</div><div class="desc">Send photos and videos that disappear after being viewed once.</div></div>
+        </div>
+        <div class="feature-item">
+            <div class="icon-box"><span class="material-symbols-outlined">undo</span></div>
+            <div class="text"><div class="title">Message Retraction</div><div class="desc">Unsend any message at any time – even after hours or days.</div></div>
+        </div>
+        <div class="feature-item">
+            <div class="icon-box"><span class="material-symbols-outlined">mic</span></div>
+            <div class="text"><div class="title">Voice-to-Text Transcription</div><div class="desc">Transcribe any voice note into text – read instead of listen.</div></div>
+        </div>
+        <div class="feature-item">
+            <div class="icon-box"><span class="material-symbols-outlined">cloud_upload</span></div>
+            <div class="text"><div class="title">Cloud Backup</div><div class="desc">Auto-backup all chats, media, and files to the cloud.</div></div>
+        </div>
+        <div class="feature-item">
+            <div class="icon-box"><span class="material-symbols-outlined">notifications_active</span></div>
+            <div class="text"><div class="title">Custom Notification Sounds</div><div class="desc">Set unique notification tones for each contact or group.</div></div>
+        </div>
+        <div class="feature-item">
+            <div class="icon-box"><span class="material-symbols-outlined">badge</span></div>
+            <div class="text"><div class="title">Custom User Badge</div><div class="desc">Choose a custom color and emoji badge to display next to your name.</div></div>
+        </div>
+        <div class="feature-item">
+            <div class="icon-box"><span class="material-symbols-outlined">analytics</span></div>
+            <div class="text"><div class="title">Advanced Analytics</div><div class="desc">See who viewed your profile and who opened your messages.</div></div>
+        </div>
+        <div class="feature-item">
+            <div class="icon-box"><span class="material-symbols-outlined">gif_box</span></div>
+            <div class="text"><div class="title">Animated Profile</div><div class="desc">Set a video or GIF as your profile picture.</div></div>
+        </div>
+        <div class="feature-item">
+            <div class="icon-box"><span class="material-symbols-outlined">folder</span></div>
+            <div class="text"><div class="title">Unlimited Chat Folders</div><div class="desc">Create unlimited folders to organise your chats.</div></div>
+        </div>
+        <div class="feature-item">
+            <div class="icon-box"><span class="material-symbols-outlined">mark_email_unread</span></div>
+            <div class="text"><div class="title">No Spam Filter</div><div class="desc">Get messages from non-contacts delivered straight to your inbox.</div></div>
+        </div>
+        <div class="feature-item">
+            <div class="icon-box"><span class="material-symbols-outlined">devices</span></div>
+            <div class="text"><div class="title">Multi-Device Sync</div><div class="desc">Sync all chats across unlimited devices simultaneously.</div></div>
+        </div>
+        <div class="feature-item">
+            <div class="icon-box"><span class="material-symbols-outlined">push_pin</span></div>
+            <div class="text"><div class="title">Message Pin Limit</div><div class="desc">Pin up to 100 messages in any chat.</div></div>
+        </div>
+        <div class="feature-item">
+            <div class="icon-box"><span class="material-symbols-outlined">sticky_note_2</span></div>
+            <div class="text"><div class="title">Exclusive Sticker Packs</div><div class="desc">Access to premium-only sticker packs created by the community.</div></div>
+        </div>
+        <div class="feature-item">
+            <div class="icon-box"><span class="material-symbols-outlined">hd</span></div>
+            <div class="text"><div class="title">HD Voice & Video Calls</div><div class="desc">Crystal-clear HD quality for voice and video calls.</div></div>
+        </div>
+        <div class="feature-item">
+            <div class="icon-box"><span class="material-symbols-outlined">incognito</span></div>
+            <div class="text"><div class="title">Incognito Mode</div><div class="desc">Appear offline to specific contacts while still being online for others.</div></div>
+        </div>
+        <div class="feature-item">
+            <div class="icon-box"><span class="material-symbols-outlined">support_agent</span></div>
+            <div class="text"><div class="title">Priority Support</div><div class="desc">Get 24/7 priority support with faster response times.</div></div>
+        </div>
+    </div>
+
+    <div class="subscribe-container">
+        <button class="subscribe-btn" id="subscribeBtn">Subscribe for ₦5,000 per year</button>
+    </div>
+
+    <div class="footer-text">
+        By subscribing to NEXORA CHQT Premium you agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.<br>
+        Subscriptions auto-renew unless canceled via your Google Play settings.
+    </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+    const toast = document.getElementById('toast');
+    function showToast(text, isError = false) {
+        toast.textContent = text;
+        toast.className = 'toast' + (isError ? ' error' : '');
+        toast.style.display = 'block';
+        clearTimeout(toast._timeout);
+        toast._timeout = setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        const ok = await checkAuth(true);
+        if (!ok) return;
+
+        document.getElementById('backBtn').addEventListener('click', () => goTo('settings.html'));
+
+        const token = getToken();
+        try {
+            const res = await fetch('/api/me', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token }) });
+            const data = await res.json();
+            if (data.success && data.user.settings && data.user.settings.darkMode === false) {
+                document.body.classList.add('light-mode');
+            }
+        } catch(e) {}
+
+        // Pricing toggle
+        const annual = document.getElementById('annualPlan');
+        const monthly = document.getElementById('monthlyPlan');
+        const subscribeBtn = document.getElementById('subscribeBtn');
+
+        function selectPlan(plan) {
+            annual.classList.toggle('active', plan === 'annual');
+            monthly.classList.toggle('active', plan === 'monthly');
+            if (plan === 'annual') {
+                subscribeBtn.textContent = 'Subscribe for ₦30,00per year';
+            } else {
+                subscribeBtn.textContent = 'Subscribe for ₦3,000 per month';
+            }
+        }
+
+        annual.addEventListener('click', () => selectPlan('annual'));
+        monthly.addEventListener('click', () => selectPlan('monthly'));
+
+        // Subscribe – navigate to payment page
+        subscribeBtn.addEventListener('click', function() {
+            const isAnnual = annual.classList.contains('active');
+            const plan = isAnnual ? 'annual' : 'monthly';
+            goTo(`premium-payment.html?plan=${plan}`);
+        });
+    });
+</script>
+</body>
+</html>
